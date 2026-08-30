@@ -117,7 +117,7 @@ export const DetailsModal: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
               {media.isOriginal && (
                 <span className="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">
-                  CINESTREAM ORIGINAL
+                  MIDNIGHTPLAY ORIGINAL
                 </span>
               )}
               <span className="text-emerald-400 font-bold">{media.matchPercentage}% Match</span>

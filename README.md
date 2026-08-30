@@ -1,4 +1,4 @@
-# CineStream TV & Web
+# MidnightPlay TV & Web
 
 A production-grade cinematic streaming web application inspired by modern OTT platforms such as Netflix, optimized for **Smart TV browsers (Samsung Tizen, LG webOS, Android TV)**, **Desktop (4K HDR)**, and **Mobile/Tablet**.
 

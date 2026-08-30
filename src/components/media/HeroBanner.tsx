@@ -95,7 +95,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media }) => {
           <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold">
             {media.isOriginal && (
               <span className="bg-red-600/90 text-white px-2.5 py-0.5 rounded tracking-widest text-[11px] font-extrabold uppercase shadow-sm">
-                CINESTREAM ORIGINAL
+                MIDNIGHTPLAY ORIGINAL
               </span>
             )}
 
