@@ -22,7 +22,7 @@ export const HomeView: React.FC = () => {
   return (
     <div className="pb-24">
       {/* Hero Featured Banner */}
-      {mediaCatalog.length > 0 && <HeroBanner media={mediaCatalog[0]} />}
+      {top10Items.length > 0 && <HeroBanner items={top10Items.slice(0, 5)} />}
 
       {/* Rows Container with subtle negative margin for Netflix overlap effect */}
       <div className="relative z-20 -mt-16 sm:-mt-20 md:-mt-24 space-y-2">

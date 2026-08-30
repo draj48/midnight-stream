@@ -12,7 +12,7 @@ import { SearchView } from './components/search/SearchView';
 import { DetailsModal } from './components/media/DetailsModal';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { ProfileModal } from './components/profile/ProfileModal';
-import { Tv, Monitor, Smartphone, Globe, ShieldCheck, Film } from 'lucide-react';
+import { Tv, Monitor, Smartphone, Globe, ShieldCheck, Film, Crown } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { currentTab, userPreferences } = useApp();
@@ -49,13 +49,14 @@ const MainContent: React.FC = () => {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Top Row: Device badges */}
           <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-zinc-800/60">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center shadow-md">
-                <Film className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-['Cinzel',serif] font-bold text-lg text-white">
-                MIDNIGHT<span className="text-red-500">PLAY</span>
+            <div className="flex items-center justify-center">
+              <span className="text-xl md:text-2xl font-['Permanent_Marker',cursive] text-white">
+                MIDNIGHT
               </span>
+              <span className="text-xl md:text-2xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
+                PLAY
+              </span>
+              <Crown className="w-5 h-5 text-red-600 ml-1.5 mt-0.5 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400">

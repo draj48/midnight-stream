@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {  Search, Bell, Tv, Film, MonitorPlay, Sparkles, Check, ChevronDown, Radio , User, Settings } from 'lucide-react';
+import {  Search, Bell, Tv, Film, MonitorPlay, Sparkles, Check, ChevronDown, Radio , User, Settings, Crown } from 'lucide-react';
 import { useApp, MainViewTab } from '../../context/AppContext';
 import { useFocusable, useSpatialNavigation } from '../../context/SpatialNavigationContext';
 
@@ -62,11 +62,7 @@ export const Navbar: React.FC = () => {
     onSelect: () => setCurrentTab('search'),
   });
 
-  const remoteBtn = useFocusable({
-    id: 'nav-remote-toggle',
-    zoneId: 'nav',
-    onSelect: () => setIsRemoteOverlayVisible(!isRemoteOverlayVisible),
-  });
+
 
   const profileBtn = useFocusable({
     id: 'nav-profile',
@@ -97,16 +93,17 @@ export const Navbar: React.FC = () => {
           <button
             id="brand-logo"
             onClick={() => setCurrentTab('home')}
-            className="flex items-center gap-2 text-left cursor-pointer group focus:outline-none"
+            className="flex items-center text-left cursor-pointer group focus:outline-none"
             aria-label="MidnightPlay Home"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shadow-lg shadow-red-900/50 group-hover:scale-105 transition-transform">
-              <Film className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl md:text-2xl font-extrabold tracking-wider font-['Cinzel',serif] text-red-500 drop-shadow-[0_2px_10px_rgba(239,68,68,0.5)]">
-                MIDNIGHT<span className="text-zinc-100 font-sans font-black">PLAY</span>
+            <div className="flex items-center justify-center transition-transform group-hover:scale-105">
+              <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-white">
+                MIDNIGHT
               </span>
+              <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
+                PLAY
+              </span>
+              <Crown className="w-6 h-6 md:w-8 md:h-8 text-red-600 ml-2 mt-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
             </div>
           </button>
 
@@ -139,23 +136,7 @@ export const Navbar: React.FC = () => {
 
         {/* Right Side: Actions, Search, TV Remote helper & Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* TV Remote Simulation Button */}
-          <button
-            ref={remoteBtn.ref}
-            onClick={() => setIsRemoteOverlayVisible(!isRemoteOverlayVisible)}
-            title="Toggle TV D-Pad Remote Simulation"
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-              remoteBtn.isFocused
-                ? 'bg-white text-zinc-950 scale-105 ring-2 ring-white'
-                : isRemoteOverlayVisible
-                ? 'bg-red-500/20 border-red-500/60 text-red-300'
-                : 'bg-zinc-900/80 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-800'
-            }`}
-            data-focused={remoteBtn.isFocused}
-          >
-            <Tv className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-            <span className="hidden lg:inline">Virtual Remote</span>
-          </button>
+
 
           {/* Search Button */}
           <button
@@ -175,46 +156,7 @@ export const Navbar: React.FC = () => {
             <span className="hidden xl:inline text-xs font-medium">Search</span>
           </button>
 
-          {/* Notifications Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="p-2 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors relative cursor-pointer"
-              aria-label="Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadNotificationCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                  {unreadNotificationCount}
-                </span>
-              )}
-            </button>
 
-            {isNotificationsOpen && (
-              <div className="absolute right-0 mt-3 w-80 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl p-4 z-50">
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-                  <span className="font-bold text-sm text-white">Notifications</span>
-                  <span className="text-xs text-zinc-400">3 new releases</span>
-                </div>
-                <div className="mt-3 space-y-2.5">
-                  <div className="flex items-start gap-3 p-2 rounded-xl bg-zinc-800/40 hover:bg-zinc-800 transition-colors cursor-pointer">
-                    <div className="w-2 h-2 rounded-full bg-red-500 mt-2 shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-zinc-200">New Episode: Quantum Protocol</p>
-                      <p className="text-[11px] text-zinc-400">Season 2, Episode 1 is now available in 4K HDR.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-2 rounded-xl bg-zinc-800/40 hover:bg-zinc-800 transition-colors cursor-pointer">
-                    <div className="w-2 h-2 rounded-full bg-red-500 mt-2 shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-zinc-200">Now Trending: Neon Odyssey 2088</p>
-                      <p className="text-[11px] text-zinc-400">Ranked #1 in Sci-Fi this week.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* User Profile Switcher */}
           <button

@@ -1,6 +1,6 @@
 import { MediaItem, Season, Episode, AudioTrack, SubtitleTrack } from '../types/media';
 
-const TMDB_API_KEY = '11f61dee51697542aa76601ef53aa2aa';
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '11f61dee51697542aa76601ef53aa2aa';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
