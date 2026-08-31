@@ -67,6 +67,7 @@ export const MyListView: React.FC = () => {
                 colIndex={idx % 4}
                 variant="landscape"
                 rowId="my-list"
+                layout="grid"
               />
             </div>
           ))}

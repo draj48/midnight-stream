@@ -50,13 +50,24 @@ const MainContent: React.FC = () => {
           {/* Top Row: Device badges */}
           <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-zinc-800/60">
             <div className="flex items-center justify-center">
-              <span className="text-xl md:text-2xl font-['Permanent_Marker',cursive] text-white">
-                MIDNIGHT
-              </span>
-              <span className="text-xl md:text-2xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
-                PLAY
-              </span>
-              <Crown className="w-5 h-5 text-red-600 ml-1.5 mt-0.5 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
+              <img 
+                src="/logo.png" 
+                alt="MidnightPlay Logo" 
+                className="h-6 md:h-8 object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }}
+              />
+              <div style={{ display: 'none' }} className="items-center justify-center">
+                <span className="text-xl md:text-2xl font-['Permanent_Marker',cursive] text-white">
+                  MIDNIGHT
+                </span>
+                <span className="text-xl md:text-2xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
+                  PLAY
+                </span>
+                <Crown className="w-5 h-5 text-red-600 ml-1.5 mt-0.5 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400">

@@ -135,6 +135,7 @@ export const SearchView: React.FC = () => {
                 colIndex={idx % 4}
                 variant="landscape"
                 rowId="search-results"
+                layout="grid"
               />
             </div>
           ))}

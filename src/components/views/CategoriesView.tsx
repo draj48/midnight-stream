@@ -68,6 +68,7 @@ export const CategoriesView: React.FC = () => {
                 colIndex={idx % 4}
                 variant="landscape"
                 rowId={`cat-${selectedCatId}`}
+                layout="grid"
               />
             </div>
           ))}

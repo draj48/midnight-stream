@@ -97,13 +97,25 @@ export const Navbar: React.FC = () => {
             aria-label="MidnightPlay Home"
           >
             <div className="flex items-center justify-center transition-transform group-hover:scale-105">
-              <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-white">
-                MIDNIGHT
-              </span>
-              <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
-                PLAY
-              </span>
-              <Crown className="w-6 h-6 md:w-8 md:h-8 text-red-600 ml-2 mt-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
+              {/* Fallback styling for when image is missing or loading */}
+              <img 
+                src="/logo.png" 
+                alt="MidnightPlay Logo" 
+                className="h-8 md:h-10 object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }}
+              />
+              <div style={{ display: 'none' }} className="items-center justify-center">
+                <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-white">
+                  MIDNIGHT
+                </span>
+                <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
+                  PLAY
+                </span>
+                <Crown className="w-6 h-6 md:w-8 md:h-8 text-red-600 ml-2 mt-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
+              </div>
             </div>
           </button>
 

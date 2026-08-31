@@ -10,6 +10,7 @@ interface MediaCardProps {
   rowIndex: number;
   colIndex: number;
   variant?: 'portrait' | 'landscape' | 'rank';
+  layout?: 'row' | 'grid';
   rowId: string;
 }
 
@@ -20,6 +21,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   colIndex,
   variant = 'landscape',
   rowId,
+  layout = 'row',
 }) => {
   const { openDetailsModal, startPlayback, isInWatchlist, toggleWatchlist } = useApp();
   const inList = isInWatchlist(media.id);
@@ -54,7 +56,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       }}
       data-focused={cardFocus.isFocused}
       className={`group relative shrink-0 cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 transform-gpu ${
-        isLandscape
+        layout === 'grid'
+          ? `w-full ${isLandscape ? 'aspect-video' : isRank ? 'aspect-[16/10]' : 'aspect-[2/3]'}`
+          : isLandscape
           ? 'w-[260px] sm:w-[300px] md:w-[340px] aspect-video'
           : isRank
           ? 'w-[200px] sm:w-[240px] md:w-[270px] aspect-[16/10]'
