@@ -17,7 +17,7 @@ export const ShowsView: React.FC = () => {
   return (
     <div className="pb-24">
       {/* Shows Hero */}
-      {showItems.length > 0 && <HeroBanner items={showItems.slice(0, 5)} />}
+      {tvShows.length > 0 && <HeroBanner items={tvShows.slice(0, 5)} />}
 
       <div className="relative z-20 -mt-16 sm:-mt-20 md:-mt-24 space-y-2">
         <ContentRow

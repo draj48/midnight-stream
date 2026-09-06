@@ -9,7 +9,7 @@ import { MediaItem } from '../../types/media';
 import { useState } from 'react';
 
 export const SearchView: React.FC = () => {
-  const { searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, mediaCatalog } = useApp();
+  const { searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, mediaCatalog, userPreferences } = useApp();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -25,7 +25,7 @@ export const SearchView: React.FC = () => {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await searchMedia(searchQuery);
+        const results = await searchMedia(searchQuery, userPreferences.includeMature);
         setSearchResults(results);
       } catch (err) {
         console.error(err);
@@ -35,7 +35,7 @@ export const SearchView: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, userPreferences.includeMature]);
 
   // Search input focusable
   const searchInputFocus = useFocusable({

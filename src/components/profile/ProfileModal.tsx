@@ -14,6 +14,30 @@ export const ProfileModal: React.FC = () => {
     updateUserPreferences,
   } = useApp();
 
+  
+  
+  const autoPlayToggleBtn = useFocusable({
+    id: 'profile-autoplay-toggle',
+    zoneId: 'modal-profile',
+    onSelect: () => updateUserPreferences({ autoPlayNextEpisode: !userPreferences.autoPlayNextEpisode }),
+  });
+
+  
+  const clearProgressBtn = useFocusable({
+    id: 'profile-clear-progress',
+    zoneId: 'modal-profile',
+    onSelect: () => {
+      localStorage.removeItem('midnightplay_continue_watching_v1');
+      window.location.reload();
+    },
+  });
+
+  const matureToggleBtn = useFocusable({
+    id: 'profile-mature-toggle',
+    zoneId: 'modal-profile',
+    onSelect: () => updateUserPreferences({ includeMature: !userPreferences.includeMature }),
+  });
+
   const closeBtn = useFocusable({
     id: 'profile-close-btn',
     zoneId: 'modal-profile',
@@ -88,14 +112,40 @@ export const ProfileModal: React.FC = () => {
                 <p className="text-zinc-400 text-[11px]">Automatically launch the next episode during credits.</p>
               </div>
               <button
+                ref={autoPlayToggleBtn.ref}
+                data-focused={autoPlayToggleBtn.isFocused}
                 onClick={() => updateUserPreferences({ autoPlayNextEpisode: !userPreferences.autoPlayNextEpisode })}
                 className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
                   userPreferences.autoPlayNextEpisode ? 'bg-red-600' : 'bg-zinc-700'
-                }`}
+                } ${autoPlayToggleBtn.isFocused ? 'ring-4 ring-white ring-offset-2 ring-offset-zinc-950 scale-110' : ''}`}
               >
                 <div
                   className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
                     userPreferences.autoPlayNextEpisode ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+            {/* Mature Content (18+) toggle */}
+            <div className="flex items-center justify-between bg-zinc-900/80 p-4 rounded-2xl border border-red-900/30">
+              <div>
+                <h4 className="font-semibold text-zinc-200 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-red-500" />
+                  Mature Content (18+)
+                </h4>
+                <p className="text-zinc-400 text-[11px]">When ON, mature-rated movies and TV shows will be visible.</p>
+              </div>
+              <button
+                ref={matureToggleBtn.ref}
+                data-focused={matureToggleBtn.isFocused}
+                onClick={() => updateUserPreferences({ includeMature: !userPreferences.includeMature })}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  userPreferences.includeMature ? 'bg-red-600' : 'bg-zinc-700'
+                } ${matureToggleBtn.isFocused ? 'ring-4 ring-white ring-offset-2 ring-offset-zinc-950 scale-110' : ''}`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
+                    userPreferences.includeMature ? 'right-1' : 'left-1'
                   }`}
                 />
               </button>
@@ -108,11 +158,13 @@ export const ProfileModal: React.FC = () => {
                 <p className="text-zinc-400 text-[11px]">Reset your saved playback positions and history.</p>
               </div>
               <button
+                ref={clearProgressBtn.ref}
+                data-focused={clearProgressBtn.isFocused}
                 onClick={() => {
                   localStorage.removeItem('midnightplay_continue_watching_v1');
                   window.location.reload();
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950 text-red-400 hover:text-red-300 border border-zinc-700 transition-colors cursor-pointer"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950 text-red-400 hover:text-red-300 border border-zinc-700 transition-colors cursor-pointer ${clearProgressBtn.isFocused ? 'ring-4 ring-white ring-offset-2 ring-offset-zinc-950' : ''}`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Reset</span>

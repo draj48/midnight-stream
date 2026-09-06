@@ -13,6 +13,7 @@ export interface UserPreferences {
   tvSafeMargin: number; // percentage, e.g. 0 to 5%
   autoPlayNextEpisode: boolean;
   autoPlayTrailers: boolean;
+  includeMature: boolean;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -23,6 +24,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   tvSafeMargin: 0,
   autoPlayNextEpisode: true,
   autoPlayTrailers: true,
+  includeMature: false,
 };
 
 export const getStoredWatchlist = (): string[] => {

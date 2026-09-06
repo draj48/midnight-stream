@@ -43,6 +43,7 @@ export interface MediaItem {
   trailerVideoUrl: string;
   streamVideoUrl: string;
   rating: string; // e.g. 'PG-13', 'TV-MA', '18+'
+  isMature?: boolean;
   releaseYear: number;
   duration: string; // e.g. '2h 18m' or '3 Seasons'
   genres: string[];

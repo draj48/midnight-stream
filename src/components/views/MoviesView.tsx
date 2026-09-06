@@ -17,7 +17,7 @@ export const MoviesView: React.FC = () => {
   return (
     <div className="pb-24">
       {/* Movies Hero */}
-      {movieItems.length > 0 && <HeroBanner items={movieItems.slice(0, 5)} />}
+      {movies.length > 0 && <HeroBanner items={movies.slice(0, 5)} />}
 
       <div className="relative z-20 -mt-16 sm:-mt-20 md:-mt-24 space-y-2">
         <ContentRow

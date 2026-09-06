@@ -83,8 +83,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const found = USER_PROFILES.find(p => p.id === profileId);
     if (found) setCurrentProfileState(found);
     
-    fetchAllMedia().then(setMediaCatalog).catch(console.error);
+    
   }, []);
+
+  useEffect(() => {
+    fetchAllMedia(userPreferences.includeMature).then(setMediaCatalog).catch(console.error);
+  }, [userPreferences.includeMature]);
+
+
+
 
   const setCurrentTab = useCallback((tab: MainViewTab) => {
     setCurrentTabState(tab);
@@ -217,6 +224,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = saveStoredPreferences(prefs);
     setUserPreferencesState(updated);
   }, []);
+
+  useEffect(() => {
+    if (!userPreferences.includeMature) {
+      if (playingSession?.media?.isMature) {
+        stopPlayback();
+        setCurrentTab('home');
+      }
+      if (selectedMediaForDetails?.isMature) {
+        closeDetailsModal();
+      }
+    }
+  }, [userPreferences.includeMature, playingSession, selectedMediaForDetails, stopPlayback, closeDetailsModal, setCurrentTab]);
 
   // Listen to global back event
   useEffect(() => {

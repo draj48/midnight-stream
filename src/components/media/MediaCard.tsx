@@ -111,11 +111,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           )}
         </div>
 
+        <div className="flex items-center gap-1.5">
+          {media.rating && (
+          <span className={`bg-black/80 backdrop-blur-sm border ${media.isMature ? 'border-red-500/80 text-red-400' : 'border-zinc-600/80 text-zinc-300'} text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm`}>
+            {media.rating}
+          </span>
+        )}
         {media.qualityBadge && (
-          <span className="bg-black/60 backdrop-blur-sm border border-zinc-700/80 text-[10px] font-semibold text-zinc-300 px-1.5 py-0.2 rounded">
+          <span className="bg-black/80 backdrop-blur-sm border border-zinc-600/80 text-[10px] font-semibold text-zinc-300 px-1.5 py-0.5 rounded shadow-sm">
             {media.qualityBadge === '4K Ultra HD' ? '4K' : media.qualityBadge}
           </span>
         )}
+        </div>
       </div>
 
       {/* Card Info & Meta overlay */}

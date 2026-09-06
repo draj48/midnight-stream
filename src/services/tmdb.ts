@@ -44,7 +44,7 @@ const fetchFromTMDB = async (endpoint: string, params: Record<string, string> = 
   return res.json();
 };
 
-export const fetchAllMedia = async (): Promise<MediaItem[]> => {
+export const fetchAllMedia = async (includeMature: boolean = false): Promise<MediaItem[]> => {
   const [trending, popularMovies, popularShows, action, scifi, anime, docs] = await Promise.all([
     fetchFromTMDB('/trending/all/day'),
     fetchFromTMDB('/movie/popular'),
@@ -71,6 +71,10 @@ export const fetchAllMedia = async (): Promise<MediaItem[]> => {
   rawItems.forEach((item: any, index: number) => {
     // Only items with images
     if (!item.backdrop_path || !item.poster_path) return;
+      
+    // Filter mature content at data level
+    const isMature = !!item.adult;
+    if (!includeMature && isMature) return;
     
     const mediaType = item.media_type || (item.name ? 'tv' : 'movie');
     const id = `tmdb-${item.id}`;
@@ -94,7 +98,8 @@ export const fetchAllMedia = async (): Promise<MediaItem[]> => {
       posterUrl: `${IMAGE_BASE_URL}/w500${item.poster_path}`,
       trailerVideoUrl: DUMMY_VIDEO_URL,
       streamVideoUrl: DUMMY_VIDEO_URL,
-      rating: mediaType === 'tv' ? 'TV-MA' : 'PG-13', // Mock rating
+      rating: isMature ? '18+' : (mediaType === 'tv' ? 'TV-14' : 'PG-13'),
+      isMature,
       releaseYear: parseInt((item.release_date || item.first_air_date || '2025').substring(0, 4), 10),
       duration: mediaType === 'movie' ? '2h 10m' : '1 Season',
       genres: getGenreNames(item.genre_ids || []),
@@ -140,17 +145,41 @@ export const fetchMediaDetails = async (mediaId: string, type: 'movie' | 'tv'): 
   const tmdbId = mediaId.replace('tmdb-', '');
   
   try {
-    const details = await fetchFromTMDB(`/${type}/${tmdbId}`, { append_to_response: 'credits' });
+    const details = await fetchFromTMDB(`/${type}/${tmdbId}`, { append_to_response: 'credits,release_dates,content_ratings' });
     const cast = details.credits?.cast?.slice(0, 6).map((c: any) => c.name) || [];
     const director = details.credits?.crew?.find((c: any) => c.job === 'Director')?.name || 'Unknown';
     const creators = details.created_by?.map((c: any) => c.name) || [];
     
+    
+    let realRating = undefined;
+    let isRealMature = details.adult;
+    
+    if (type === 'movie' && details.release_dates?.results) {
+      const us = details.release_dates.results.find((r) => r.iso_3166_1 === 'US');
+      const ind = details.release_dates.results.find((r) => r.iso_3166_1 === 'IN');
+      const cert = ind?.release_dates?.[0]?.certification || us?.release_dates?.[0]?.certification;
+      if (cert) {
+        realRating = cert;
+        if (cert === 'A' || cert === 'R' || cert === 'NC-17') isRealMature = true;
+      }
+    } else if (type === 'tv' && details.content_ratings?.results) {
+      const us = details.content_ratings.results.find((r) => r.iso_3166_1 === 'US');
+      const ind = details.content_ratings.results.find((r) => r.iso_3166_1 === 'IN');
+      const cert = ind?.rating || us?.rating;
+      if (cert) {
+        realRating = cert;
+        if (cert === 'A' || cert === 'TV-MA') isRealMature = true;
+      }
+    }
+
     const update: Partial<MediaItem> = {
       cast,
       director,
       creators,
       description: details.overview || 'No description available.',
       duration: type === 'movie' && details.runtime ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m` : (type === 'tv' ? `${details.number_of_seasons || 1} Seasons` : undefined),
+      rating: realRating,
+      isMature: isRealMature,
     };
 
     if (type === 'tv' && details.number_of_seasons > 0) {
@@ -186,21 +215,56 @@ export const fetchMediaDetails = async (mediaId: string, type: 'movie' | 'tv'): 
   }
 };
 
-export const searchMedia = async (query: string): Promise<MediaItem[]> => {
+
+export const searchMedia = async (query: string, includeMature: boolean = false): Promise<MediaItem[]> => {
   if (!query.trim()) return [];
   
   try {
-    const results = await fetchFromTMDB('/search/multi', { query: encodeURIComponent(query) });
+    const results = await fetchFromTMDB('/search/multi', { 
+      query: encodeURIComponent(query),
+      include_adult: includeMature.toString()
+    });
     
-    // Map to MediaItem
-    const mappedMap = new Map<string, MediaItem>();
+    // Process results concurrently to get real ratings
+    const validItems = results.results.filter((item: any) => 
+      (item.media_type === 'movie' || item.media_type === 'tv') && 
+      item.backdrop_path && item.poster_path
+    );
 
-    results.results.forEach((item: any, index: number) => {
-      // Only movies and tv shows, and must have images
-      if (item.media_type !== 'movie' && item.media_type !== 'tv') return;
-      if (!item.backdrop_path || !item.poster_path) return;
-      
+    const detailedItemsPromises = validItems.map(async (item: any) => {
       const mediaType = item.media_type;
+      const tmdbId = item.id;
+      
+      let realRating = mediaType === 'tv' ? 'TV-14' : 'PG-13';
+      let isRealMature = !!item.adult;
+      
+      try {
+        const extra = await fetchFromTMDB(`/${mediaType}/${tmdbId}`, { append_to_response: 'release_dates,content_ratings' });
+        
+        if (mediaType === 'movie' && extra.release_dates?.results) {
+          const us = extra.release_dates.results.find((r: any) => r.iso_3166_1 === 'US');
+          const ind = extra.release_dates.results.find((r: any) => r.iso_3166_1 === 'IN');
+          const cert = ind?.release_dates?.[0]?.certification || us?.release_dates?.[0]?.certification;
+          if (cert) {
+            realRating = cert;
+            if (cert === 'A' || cert === 'R' || cert === 'NC-17') isRealMature = true;
+          }
+        } else if (mediaType === 'tv' && extra.content_ratings?.results) {
+          const us = extra.content_ratings.results.find((r: any) => r.iso_3166_1 === 'US');
+          const ind = extra.content_ratings.results.find((r: any) => r.iso_3166_1 === 'IN');
+          const cert = ind?.rating || us?.rating;
+          if (cert) {
+            realRating = cert;
+            if (cert === 'A' || cert === 'TV-MA') isRealMature = true;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch extra details for search result", e);
+      }
+      
+      // Filter out if mature and includeMature is false
+      if (!includeMature && isRealMature) return null;
+
       const id = `tmdb-${item.id}`;
       const title = item.title || item.name;
 
@@ -213,7 +277,8 @@ export const searchMedia = async (query: string): Promise<MediaItem[]> => {
         posterUrl: `${IMAGE_BASE_URL}/w500${item.poster_path}`,
         trailerVideoUrl: DUMMY_VIDEO_URL,
         streamVideoUrl: DUMMY_VIDEO_URL,
-        rating: mediaType === 'tv' ? 'TV-MA' : 'PG-13', // Mock rating
+        rating: realRating,
+        isMature: isRealMature,
         releaseYear: parseInt((item.release_date || item.first_air_date || '2025').substring(0, 4), 10),
         duration: mediaType === 'movie' ? '2h 10m' : '1 Season',
         genres: getGenreNames(item.genre_ids || []),
@@ -245,11 +310,12 @@ export const searchMedia = async (query: string): Promise<MediaItem[]> => {
           }
         ];
       }
-
-      mappedMap.set(id, media);
+      
+      return media;
     });
 
-    return Array.from(mappedMap.values());
+    const detailedItems = await Promise.all(detailedItemsPromises);
+    return detailedItems.filter((item): item is MediaItem => item !== null);
   } catch (error) {
     console.error('Error searching media:', error);
     return [];
