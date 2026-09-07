@@ -23,7 +23,7 @@ export const MoviesView: React.FC = () => {
         <ContentRow
           id="movies-spotlight"
           title="Spotlight Feature Films"
-          subtitle="Cinematic blockbusters in 4K HDR"
+          subtitle="Cinematic blockbusters"
           items={movies}
           variant="portrait"
           rowIndex={0}

@@ -60,7 +60,7 @@ export const SearchView: React.FC = () => {
   });
 
   return (
-    <div className="pt-24 pb-20 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto min-h-screen">
+    <div className="pt-28 md:pt-24 pb-20 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto min-h-screen">
       {/* Search Input Bar */}
       <div className="max-w-3xl mx-auto mb-8 space-y-4">
         <div
@@ -80,6 +80,13 @@ export const SearchView: React.FC = () => {
             placeholder="Search titles, actors, genres, or keywords..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => {
+              // Ensure space and all characters pass directly to input without bubbling
+              e.stopPropagation();
+              if (e.key === 'Enter') {
+                inputRef.current?.blur();
+              }
+            }}
             className="w-full bg-transparent px-4 py-4 text-base sm:text-lg text-white placeholder:text-zinc-500 focus:outline-none"
             autoFocus
           />

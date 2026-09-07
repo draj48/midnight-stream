@@ -14,6 +14,9 @@ export interface UserPreferences {
   autoPlayNextEpisode: boolean;
   autoPlayTrailers: boolean;
   includeMature: boolean;
+  nsfwFilter: boolean;
+  nsfwTolerance: 30 | 50 | 100;
+  lowPowerTVMode: boolean; // Enables lightweight zero-lag rendering for Linux TVs and low-RAM devices
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -25,6 +28,9 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   autoPlayNextEpisode: true,
   autoPlayTrailers: true,
   includeMature: false,
+  nsfwFilter: true,
+  nsfwTolerance: 50,
+  lowPowerTVMode: true,
 };
 
 export const getStoredWatchlist = (): string[] => {

@@ -6,6 +6,8 @@ import { useApp } from '../../context/AppContext';
 export const HomeView: React.FC = () => {
   const { mediaCatalog, continueWatchingList } = useApp();
 
+  
+
   const continueWatchingMedia = mediaCatalog.filter(m =>
     continueWatchingList.some(c => c.mediaId === m.id)
   );
@@ -17,7 +19,6 @@ export const HomeView: React.FC = () => {
   const scifiItems = mediaCatalog.filter(m => m.genres.includes('Sci-Fi'));
   const actionItems = mediaCatalog.filter(m => m.genres.includes('Action'));
   const animeItems = mediaCatalog.filter(m => m.genres.includes('Anime'));
-  const docItems = mediaCatalog.filter(m => m.genres.includes('Documentary'));
 
   return (
     <div className="pb-24">
@@ -63,7 +64,7 @@ export const HomeView: React.FC = () => {
         <ContentRow
           id="popular-movies"
           title="Blockbuster Movies"
-          subtitle="Full-length cinematic epics in 4K HDR"
+          subtitle="Full-length cinematic epics"
           items={movieItems}
           variant="portrait"
           rowIndex={3}
@@ -109,15 +110,6 @@ export const HomeView: React.FC = () => {
           rowIndex={7}
         />
 
-        {/* Documentaries */}
-        <ContentRow
-          id="doc-picks"
-          title="Nature & Cosmos Documentaries"
-          subtitle="Deep abyss exploration & cosmic odysseys"
-          items={docItems}
-          variant="landscape"
-          rowIndex={8}
-        />
       </div>
     </div>
   );

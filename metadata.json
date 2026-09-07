@@ -1,6 +1,6 @@
 {
   "name": "MidnightPlay TV & Web",
-  "description": "A production-grade cinematic streaming web application optimized for Smart TV D-pad navigation, desktop, and mobile with high-fidelity video playback, watchlists, and search.",
+  "description": "A production-grade cinematic streaming web application with AniList anime tracking, Smart TV D-pad navigation, desktop, and mobile support with high-fidelity video playback, watchlists, and search.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -151,7 +151,7 @@ export const TVRemoteWidget: React.FC = () => {
                   if (playingSession) {
                     stopPlayback();
                   } else {
-                    startPlayback(mediaCatalog[0]);
+                    if (mediaCatalog[0]) startPlayback(mediaCatalog[0]);
                   }
                 }}
                 title={playingSession ? 'Stop Video' : 'Quick Play'}

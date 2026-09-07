@@ -44,9 +44,12 @@ export interface MediaItem {
   streamVideoUrl: string;
   rating: string; // e.g. 'PG-13', 'TV-MA', '18+'
   isMature?: boolean;
+  nsfwScore?: number; // 0 to 100
   releaseYear: number;
   duration: string; // e.g. '2h 18m' or '3 Seasons'
   genres: string[];
+  genreIds?: number[];
+  originalLanguage?: string;
   matchPercentage: number;
   isOriginal?: boolean;
   isTrending?: boolean;

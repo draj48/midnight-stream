@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { FocusableElementConfig, NavDirection, SpatialNavigationContextType } from '../types/navigation';
 import { findNextFocusable } from '../lib/spatialNavigation';
+import { applyTVOptimizations, detectTVCapabilities, TV_KEYCODES } from '../lib/tvOptimizer';
 
 const SpatialNavigationContext = createContext<SpatialNavigationContextType | null>(null);
 
@@ -17,6 +18,15 @@ export const SpatialNavigationProvider: React.FC<{ children: React.ReactNode }> 
 
   const activeZoneRef = useRef<string | null>(activeZone);
   activeZoneRef.current = activeZone;
+
+  // TV Capabilities detection
+  const tvCaps = useRef(detectTVCapabilities());
+  const lastNavTime = useRef<number>(0);
+
+  // Initialize TV optimizations on mount
+  useEffect(() => {
+    applyTVOptimizations(true);
+  }, []);
 
   const registerFocusable = useCallback((config: FocusableElementConfig) => {
     elementsRegistry.current.set(config.id, config);
@@ -55,12 +65,12 @@ export const SpatialNavigationProvider: React.FC<{ children: React.ReactNode }> 
         item.onFocus();
       }
 
-      // Smooth scroll into viewport
+      // Fast, jank-free scroll into viewport optimized for Linux Smart TV
       if (options?.scrollIntoView !== false) {
         try {
-          // If in a horizontal row, center in container
+          const isLowSpec = tvCaps.current.isLowSpecDevice;
           item.domElement.scrollIntoView({
-            behavior: 'smooth',
+            behavior: isLowSpec ? 'auto' : 'smooth',
             block: options?.blockCenter ? 'center' : 'nearest',
             inline: 'center',
           });
@@ -78,6 +88,13 @@ export const SpatialNavigationProvider: React.FC<{ children: React.ReactNode }> 
   }, []);
 
   const navigate = useCallback((direction: NavDirection): boolean => {
+    // Throttle rapid repeated remote signals (70ms threshold) to prevent thread locking on low-end TV CPUs
+    const now = Date.now();
+    if (now - lastNavTime.current < 65) {
+      return false;
+    }
+    lastNavTime.current = now;
+
     if (!activeFocusIdRef.current) {
       // Pick first element
       const first = elementsRegistry.current.values().next().value;
@@ -123,74 +140,136 @@ export const SpatialNavigationProvider: React.FC<{ children: React.ReactNode }> 
     return handled;
   }, []);
 
-  // Global Keyboard / Smart TV Remote Handler
+  // Global Keyboard & Universal Linux Smart TV Remote Handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when user is typing in standard text inputs unless it's ArrowDown/Escape
       const target = e.target as HTMLElement | null;
-      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+      const isInput = Boolean(
+        target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          (target.getAttribute && target.getAttribute('role') === 'textbox')
+        )
+      );
 
-      switch (e.key) {
-        case 'ArrowUp':
-          if (isInput && e.key === 'ArrowUp') return;
+      // Resolve key or vendor keycode from TV_KEYCODES (Realme, Thomson, CloudTV, Hisense, Tizen, webOS)
+      const resolvedKey = e.key || TV_KEYCODES[e.keyCode] || '';
+      const keyCode = e.keyCode;
+
+      // When user is typing inside an input field or search bar, NEVER block typing characters or spacebar!
+      if (isInput) {
+        // Allow Space, letters, numbers, Backspace, Enter, and horizontal caret navigation
+        if (
+          e.key === ' ' ||
+          e.code === 'Space' ||
+          resolvedKey === 'Space' ||
+          keyCode === 32 ||
+          resolvedKey === 'Enter' ||
+          keyCode === 13 ||
+          resolvedKey === 'Backspace' ||
+          keyCode === 8 ||
+          resolvedKey === 'ArrowLeft' ||
+          keyCode === 37 ||
+          resolvedKey === 'ArrowRight' ||
+          keyCode === 39 ||
+          resolvedKey === 'ArrowUp' ||
+          keyCode === 38
+        ) {
+          return;
+        }
+
+        // Pressing ArrowDown navigates out of search bar down into category pills/results
+        if (resolvedKey === 'ArrowDown' || keyCode === 40) {
+          target?.blur();
           e.preventDefault();
           setIsTVMode(true);
-          navigate('UP');
-          break;
-
-        case 'ArrowDown':
-          e.preventDefault();
-          setIsTVMode(true);
-          // If in search input, blur to move focus down to results
-          if (isInput) {
-            target?.blur();
-          }
           navigate('DOWN');
-          break;
+          return;
+        }
 
-        case 'ArrowLeft':
-          if (isInput) return; // allow cursor movement in text field
+        // Pressing Escape or Back un-focuses the input
+        if (resolvedKey === 'Escape' || keyCode === 27) {
+          target?.blur();
           e.preventDefault();
-          setIsTVMode(true);
-          navigate('LEFT');
-          break;
+          return;
+        }
 
-        case 'ArrowRight':
-          if (isInput) return;
-          e.preventDefault();
-          setIsTVMode(true);
-          navigate('RIGHT');
-          break;
+        return;
+      }
 
-        case 'Enter':
-          if (isInput) return; // let form enter submit
-          e.preventDefault();
-          triggerSelect();
-          break;
+      // Handle Directional Keys (when not typing in an input)
+      if (resolvedKey === 'ArrowUp' || keyCode === 38) {
+        e.preventDefault();
+        setIsTVMode(true);
+        navigate('UP');
+        return;
+      }
 
-        case 'Escape':
-        case 'Backspace':
-        case 'BrowserBack':
-        case 'GoBack':
-          // keyCode 10009 is Return/Back on Samsung Tizen TV, 461 on LG webOS
-          if (isInput && e.key === 'Backspace') return;
-          e.preventDefault();
-          triggerBack();
-          break;
+      if (resolvedKey === 'ArrowDown' || keyCode === 40) {
+        e.preventDefault();
+        setIsTVMode(true);
+        navigate('DOWN');
+        return;
+      }
 
-        default:
-          // Check Tizen/webOS keyCodes
-          if (e.keyCode === 10009 || e.keyCode === 461 || e.keyCode === 8) {
-            if (!isInput) {
-              e.preventDefault();
-              triggerBack();
-            }
-          }
-          break;
+      if (resolvedKey === 'ArrowLeft' || keyCode === 37) {
+        e.preventDefault();
+        setIsTVMode(true);
+        navigate('LEFT');
+        return;
+      }
+
+      if (resolvedKey === 'ArrowRight' || keyCode === 39) {
+        e.preventDefault();
+        setIsTVMode(true);
+        navigate('RIGHT');
+        return;
+      }
+
+      // Handle Enter / OK / Space trigger selection on focused UI item
+      if (
+        resolvedKey === 'Enter' ||
+        resolvedKey === 'Space' ||
+        e.key === ' ' ||
+        e.code === 'Space' ||
+        keyCode === 13 ||
+        keyCode === 32
+      ) {
+        e.preventDefault();
+        triggerSelect();
+        return;
+      }
+
+      // Handle Back / Return / Escape (Realme, Thomson, Tizen 10009, webOS 461, Vewd 10182)
+      if (
+        resolvedKey === 'Escape' ||
+        resolvedKey === 'Backspace' ||
+        resolvedKey === 'BrowserBack' ||
+        resolvedKey === 'GoBack' ||
+        resolvedKey === 'Back' ||
+        keyCode === 10009 ||
+        keyCode === 461 ||
+        keyCode === 10182 ||
+        keyCode === 283 ||
+        keyCode === 27 ||
+        keyCode === 8
+      ) {
+        if (isInput && resolvedKey === 'Backspace') return;
+        e.preventDefault();
+        triggerBack();
+        return;
+      }
+
+      // Handle TV Media Play/Pause
+      if (resolvedKey === 'MediaPlayPause' || resolvedKey === 'MediaPlay' || keyCode === 179 || keyCode === 415 || keyCode === 19) {
+        e.preventDefault();
+        triggerSelect();
+        return;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };

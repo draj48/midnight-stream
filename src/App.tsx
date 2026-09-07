@@ -1,8 +1,10 @@
 import React from 'react';
 import { SpatialNavigationProvider } from './context/SpatialNavigationContext';
 import { AppProvider, useApp } from './context/AppContext';
+import { AniListProvider } from './context/AniListContext';
 import { Navbar } from './components/navigation/Navbar';
 import { TVRemoteWidget } from './components/navigation/TVRemoteWidget';
+import { applyTVOptimizations } from './lib/tvOptimizer';
 import { HomeView } from './components/views/HomeView';
 import { ShowsView } from './components/views/ShowsView';
 import { MoviesView } from './components/views/MoviesView';
@@ -12,10 +14,16 @@ import { SearchView } from './components/search/SearchView';
 import { DetailsModal } from './components/media/DetailsModal';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { ProfileModal } from './components/profile/ProfileModal';
-import { Tv, Monitor, Smartphone, Globe, ShieldCheck, Film, Crown } from 'lucide-react';
+import { AniListAuthModal } from './components/anilist/AniListAuthModal';
+import { BackToTop } from './components/navigation/BackToTop';
+import { Tv, Monitor, Smartphone, Globe, ShieldCheck, Film, Crown, ArrowUp } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { currentTab, userPreferences } = useApp();
+
+  React.useEffect(() => {
+    applyTVOptimizations(userPreferences.lowPowerTVMode);
+  }, [userPreferences.lowPowerTVMode]);
 
   return (
     <div
@@ -42,7 +50,9 @@ const MainContent: React.FC = () => {
       <DetailsModal />
       <VideoPlayer />
       <ProfileModal />
+      <AniListAuthModal />
       <TVRemoteWidget />
+      <BackToTop focusId="global-main-back-to-top" zoneId="global" threshold={300} />
 
       {/* Cinematic Platform Footer */}
       <footer className="w-full border-t border-zinc-800/80 bg-zinc-950/90 py-12 px-4 sm:px-8 md:px-12 mt-auto">
@@ -53,10 +63,13 @@ const MainContent: React.FC = () => {
               <img 
                 src="/logo.png" 
                 alt="MidnightPlay Logo" 
-                className="h-6 md:h-8 object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                className="h-7 sm:h-8 md:h-9 w-auto max-w-[160px] sm:max-w-[200px] object-contain drop-shadow-[0_2px_8px_rgba(220,38,38,0.5)] select-none"
+                loading="lazy"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                  if (e.currentTarget.nextElementSibling) {
+                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                  }
                 }}
               />
               <div style={{ display: 'none' }} className="items-center justify-center">
@@ -77,7 +90,7 @@ const MainContent: React.FC = () => {
               </span>
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800">
                 <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                <span>Desktop (4K HDR)</span>
+                <span>Desktop & Web</span>
               </span>
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800">
                 <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
@@ -91,7 +104,7 @@ const MainContent: React.FC = () => {
             <div className="space-y-2">
               <h5 className="font-bold text-zinc-200">Browse</h5>
               <ul className="space-y-1.5">
-                <li><span className="hover:text-white cursor-pointer">4K Ultra HD</span></li>
+                <li><span className="hover:text-white cursor-pointer">Popular Movies</span></li>
                 <li><span className="hover:text-white cursor-pointer">Dolby Atmos Audio</span></li>
                 <li><span className="hover:text-white cursor-pointer">MidnightPlay Originals</span></li>
               </ul>
@@ -123,16 +136,26 @@ const MainContent: React.FC = () => {
           </div>
 
           {/* Bottom Copyright & Hotkeys helper */}
-          <div className="pt-4 border-t border-zinc-800/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-zinc-500">
+          <div className="pt-4 border-t border-zinc-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-500">
             <p>© 2026 MidnightPlay Inc. Built for Smart TV browsers, Desktop, and Mobile.</p>
-            <p className="flex items-center gap-2">
-              <span>D-Pad Navigation:</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">Arrows</kbd>
-              <span>•</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">Enter</kbd>
-              <span>•</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">Esc/Back</kbd>
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="flex items-center gap-2">
+                <span>D-Pad Navigation:</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">Arrows</kbd>
+                <span>•</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">Enter</kbd>
+                <span>•</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">Esc/Back</kbd>
+              </p>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-500 text-zinc-300 hover:text-white transition-all cursor-pointer text-xs font-semibold"
+                title="Back to Top"
+              >
+                <ArrowUp className="w-3.5 h-3.5 text-red-500" />
+                <span>Top</span>
+              </button>
+            </div>
           </div>
         </div>
       </footer>
@@ -144,7 +167,9 @@ export default function App() {
   return (
     <SpatialNavigationProvider>
       <AppProvider>
-        <MainContent />
+        <AniListProvider>
+          <MainContent />
+        </AniListProvider>
       </AppProvider>
     </SpatialNavigationProvider>
   );

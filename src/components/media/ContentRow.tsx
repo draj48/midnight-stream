@@ -45,7 +45,7 @@ export const ContentRow: React.FC<ContentRowProps> = ({
   if (!items || items.length === 0) return null;
 
   return (
-    <section className="relative py-4 md:py-6 group/row" aria-label={title}>
+    <section className="relative py-4 md:py-6 group/row tv-row-contain" aria-label={title}>
       {/* Row Header */}
       <div className="px-4 sm:px-8 md:px-12 mb-3 flex items-baseline justify-between">
         <div className="flex items-baseline gap-3">

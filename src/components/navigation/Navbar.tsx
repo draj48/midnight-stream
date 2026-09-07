@@ -97,24 +97,26 @@ export const Navbar: React.FC = () => {
             aria-label="MidnightPlay Home"
           >
             <div className="flex items-center justify-center transition-transform group-hover:scale-105">
-              {/* Fallback styling for when image is missing or loading */}
               <img 
                 src="/logo.png" 
                 alt="MidnightPlay Logo" 
-                className="h-8 md:h-10 object-contain drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                className="h-7 sm:h-8 md:h-9 lg:h-10 w-auto max-w-[150px] sm:max-w-[190px] md:max-w-[220px] object-contain drop-shadow-[0_2px_10px_rgba(220,38,38,0.6)] select-none"
+                loading="eager"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                  if (e.currentTarget.nextElementSibling) {
+                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                  }
                 }}
               />
               <div style={{ display: 'none' }} className="items-center justify-center">
-                <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-white">
+                <span className="text-2xl sm:text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-white">
                   MIDNIGHT
                 </span>
-                <span className="text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
+                <span className="text-2xl sm:text-3xl md:text-4xl font-['Permanent_Marker',cursive] text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] -ml-0.5">
                   PLAY
                 </span>
-                <Crown className="w-6 h-6 md:w-8 md:h-8 text-red-600 ml-2 mt-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
+                <Crown className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-red-600 ml-1.5 md:ml-2 mt-0.5 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] fill-red-600" />
               </div>
             </div>
           </button>
@@ -167,8 +169,6 @@ export const Navbar: React.FC = () => {
             <Search className="w-4 h-4" />
             <span className="hidden xl:inline text-xs font-medium">Search</span>
           </button>
-
-
 
           {/* User Profile Switcher */}
           <button

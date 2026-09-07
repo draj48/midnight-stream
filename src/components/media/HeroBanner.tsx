@@ -1,5 +1,6 @@
+import { useNSFWBlur } from './useNSFWBlur';
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Info, Plus, Check, Volume2, VolumeX, Flame, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Info, Plus, Check, Volume2, VolumeX, Flame, Sparkles, ChevronLeft, ChevronRight , EyeOff} from 'lucide-react';
 import { MediaItem } from '../../types/media';
 import { useApp } from '../../context/AppContext';
 import { useFocusable } from '../../context/SpatialNavigationContext';
@@ -10,7 +11,7 @@ interface HeroBannerProps {
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => {
-  const { startPlayback, openDetailsModal, isInWatchlist, toggleWatchlist } = useApp();
+  const { startPlayback, openDetailsModal, isInWatchlist, toggleWatchlist, userPreferences } = useApp();
   const [activeIndex, setActiveIndex] = useState(0);
   
   const carouselItems = items.length > 0 ? items : (media ? [media] : []);
@@ -43,17 +44,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
   useEffect(() => {
     setIsVideoLoaded(false);
     setShowVideo(false);
+    if (userPreferences.autoPlayTrailers === false) return;
     const timer = setTimeout(() => {
       setShowVideo(true);
-    }, 1200);
+    }, 1800);
     return () => clearTimeout(timer);
-  }, [activeMedia?.id]);
+  }, [activeMedia?.id, userPreferences.autoPlayTrailers]);
 
   // Spatial navigation buttons in Hero
   const playBtn = useFocusable({
     id: 'hero-play-btn',
     zoneId: 'hero',
-    onSelect: () => startPlayback(media),
+    onSelect: () => { if (activeMedia) startPlayback(activeMedia); },
   });
 
   const infoBtn = useFocusable({
@@ -80,6 +82,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
   });
 
   if (!activeMedia) return null;
+  const { isNSFW, userUnblurred, toggleUnblur } = useNSFWBlur(
+    activeMedia?.backdropUrl || '',
+    userPreferences.nsfwFilter,
+    userPreferences.nsfwTolerance ?? 50,
+    activeMedia?.nsfwScore
+  );
 
 
   return (
@@ -91,7 +99,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
           alt={activeMedia?.title}
           className={`w-full h-full object-cover object-center scale-105 transition-opacity duration-1000 ${
             isVideoLoaded ? 'opacity-0' : 'opacity-100'
-          }`}
+          } ${isNSFW && !userUnblurred ? 'blur-2xl scale-110 saturate-50' : ''}`}
           loading="eager"
         />
 
@@ -174,11 +182,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
               {activeMedia?.rating}
             </span>
             <span className="text-zinc-300">{activeMedia?.duration}</span>
-            {activeMedia?.qualityBadge && (
-              <span className="border border-zinc-600/70 bg-zinc-800/60 text-zinc-300 px-1.5 py-0.2 rounded text-[10px] font-bold tracking-wider">
-                {activeMedia?.qualityBadge}
-              </span>
-            )}
           </div>
 
           {/* Title */}
@@ -207,7 +210,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
             <button
               id="hero-play-btn"
               ref={playBtn.ref}
-              onClick={() => startPlayback(media)}
+              onClick={() => { if (activeMedia) startPlayback(activeMedia); }}
               className={`flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-base transition-all duration-200 cursor-pointer ${
                 playBtn.isFocused
                   ? 'bg-white text-black scale-105 shadow-[0_0_25px_rgba(255,255,255,0.7)] ring-4 ring-white font-extrabold'
@@ -256,8 +259,20 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
           </div>
         </div>
 
-        {/* Mute / Audio preview control toggle */}
-        <div className="absolute right-4 sm:right-8 md:right-12 bottom-14 md:bottom-20 flex items-center gap-3">
+        {/* Mute / Audio preview control toggle and NSFW Uncover */}
+        <div className="absolute right-4 sm:right-8 md:right-12 bottom-14 md:bottom-20 flex items-center gap-3 z-30">
+          {isNSFW && !userUnblurred && !isVideoLoaded && (
+            <button
+              onClick={toggleUnblur}
+              className="flex items-center gap-2 bg-black/80 hover:bg-zinc-900 active:scale-95 transition-all backdrop-blur-md px-3.5 py-1.5 rounded-full border border-amber-500/70 shadow-2xl cursor-pointer group/unblur text-zinc-200"
+              title="Click to uncover hero backdrop"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-amber-400 group-hover/unblur:scale-110 transition-transform" />
+              <span className="text-xs font-bold text-amber-300">NSFW Blurred</span>
+              <span className="text-[11px] text-zinc-300 underline underline-offset-2">Uncover</span>
+            </button>
+          )}
+
           <button
             id="hero-mute-btn"
             ref={muteBtn.ref}

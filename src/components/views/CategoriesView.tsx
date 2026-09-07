@@ -16,7 +16,7 @@ export const CategoriesView: React.FC = () => {
       );
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto min-h-screen">
+    <div className="pt-28 md:pt-24 pb-24 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto min-h-screen">
       {/* Category Header */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">

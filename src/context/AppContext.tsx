@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { ContinueWatchingItem, Episode, MediaItem, UserProfile } from '../types/media';
+import { ContinueWatchingItem, Episode, MediaItem, Season, UserProfile } from '../types/media';
 import { USER_PROFILES } from '../data/mockMedia';
 import { fetchAllMedia, fetchMediaDetails } from '../services/tmdb';
 import {
@@ -51,6 +51,7 @@ interface AppContextType {
   setIsProfileModalOpen: (open: boolean) => void;
   userPreferences: UserPreferences;
   updateUserPreferences: (prefs: Partial<UserPreferences>) => void;
+  updateMediaSeasons: (mediaId: string, seasons: Season[]) => void;
   unreadNotificationCount: number;
   isNotificationsOpen: boolean;
   setIsNotificationsOpen: (open: boolean) => void;
@@ -194,6 +195,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     media: MediaItem,
     options?: { initialTime?: number; episode?: Episode }
   ) => {
+    if (!media) return;
     if (activeFocusId) {
       setLastMainFocusId(activeFocusId);
     }
@@ -223,6 +225,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUserPreferences = useCallback((prefs: Partial<UserPreferences>) => {
     const updated = saveStoredPreferences(prefs);
     setUserPreferencesState(updated);
+  }, []);
+
+  const updateMediaSeasons = useCallback((mediaId: string, seasons: Season[]) => {
+    setSelectedMediaForDetails(prev => {
+      if (prev && prev.id === mediaId) {
+        return { ...prev, seasons };
+      }
+      return prev;
+    });
+    setMediaCatalog(prev => prev.map(m => m.id === mediaId ? { ...m, seasons } : m));
   }, []);
 
   useEffect(() => {
@@ -310,6 +322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsProfileModalOpen,
         userPreferences,
         updateUserPreferences,
+        updateMediaSeasons,
         unreadNotificationCount,
         isNotificationsOpen,
         setIsNotificationsOpen,

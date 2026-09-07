@@ -14,7 +14,7 @@ export const MyListView: React.FC = () => {
     : savedMedia.filter(m => m.type === filterType);
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto min-h-screen">
+    <div className="pt-28 md:pt-24 pb-24 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto min-h-screen">
       {/* Header & Filter Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-zinc-800">
         <div>

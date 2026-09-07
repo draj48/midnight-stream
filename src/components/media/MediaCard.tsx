@@ -1,5 +1,6 @@
+import { useNSFWBlur } from './useNSFWBlur';
 import React from 'react';
-import { Play, Info, Plus, Check, Flame, Clock } from 'lucide-react';
+import { Play, Info, Plus, Check, Flame, Clock , EyeOff} from 'lucide-react';
 import { ContinueWatchingItem, MediaItem } from '../../types/media';
 import { useApp } from '../../context/AppContext';
 import { useFocusable } from '../../context/SpatialNavigationContext';
@@ -23,7 +24,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   rowId,
   layout = 'row',
 }) => {
-  const { openDetailsModal, startPlayback, isInWatchlist, toggleWatchlist } = useApp();
+  const { openDetailsModal, startPlayback, isInWatchlist, toggleWatchlist, userPreferences } = useApp();
+
   const inList = isInWatchlist(media.id);
 
   const focusId = `card-${rowId}-${media.id}-${rowIndex}-${colIndex}`;
@@ -42,6 +44,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   });
 
   const isLandscape = variant === 'landscape' || !!continueWatching;
+  
+  const imageUrl = isLandscape ? media.backdropUrl : media.posterUrl;
+  const { isNSFW, userUnblurred, toggleUnblur, ref: nsfwRef } = useNSFWBlur(
+    imageUrl,
+    userPreferences.nsfwFilter,
+    userPreferences.nsfwTolerance ?? 50,
+    media.nsfwScore
+  );
   const isRank = variant === 'rank';
 
   return (
@@ -71,24 +81,52 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       aria-label={`${media.title} (${media.releaseYear})`}
     >
       {/* Background Poster/Backdrop Image */}
-      <img
-        src={isLandscape ? media.backdropUrl : media.posterUrl}
-        alt={media.title}
-        loading="lazy"
-        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-      />
+      <div ref={nsfwRef} className="absolute inset-0 overflow-hidden w-full h-full">
+        <img
+          src={isLandscape ? media.backdropUrl : media.posterUrl}
+          alt={media.title}
+          loading="lazy"
+          decoding="async"
+          className={`w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-105 ${isNSFW && !userUnblurred ? 'blur-2xl scale-125 saturate-50' : ''}`}
+        />
+        {isNSFW && !userUnblurred && (
+          <>
+            {/* Shading overlay to obscure sensitive image detail */}
+            <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+            
+            {/* Perfectly centered in the poster display area with guaranteed clearance above bottom text and below top badges */}
+            <div className={`absolute inset-x-0 z-20 pointer-events-none flex items-center justify-center ${isLandscape ? 'top-[34px] bottom-[54px]' : 'top-[34px] bottom-[64px]'}`}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleUnblur();
+                }}
+                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-950/90 hover:bg-black active:scale-95 text-white border border-amber-500/80 shadow-2xl backdrop-blur-md cursor-pointer transition-all hover:border-amber-400 group/unblur ring-1 ring-black/70"
+                title="Click to uncover poster"
+              >
+                <EyeOff className="w-3.5 h-3.5 text-amber-400 shrink-0 group-hover/unblur:scale-110 transition-transform" />
+                <span className="text-[10px] font-bold tracking-wider text-amber-400 uppercase">NSFW</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                <span className="text-[10px] text-zinc-200 font-medium underline underline-offset-2 hover:text-white">Uncover</span>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Gradient Bottom Shadow */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
 
-      {/* Rank number for Top 10 rows */}
+      {/* Rank number for Top 10 rows - Modern Sleek Streaming Typography */}
       {isRank && media.top10Rank && (
-        <div className="absolute -left-1.5 -bottom-2 pointer-events-none select-none">
+        <div className="absolute left-2.5 bottom-2 pointer-events-none select-none z-10">
           <span
-            className="text-7xl md:text-8xl font-black italic tracking-tighter text-black/80 font-['Cinzel',serif]"
+            className="text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight leading-none font-['Bebas_Neue',sans-serif] select-none block"
             style={{
-              WebkitTextStroke: '2px #dc2626',
-              textShadow: '0 4px 20px rgba(220,38,38,0.6)',
+              color: '#09090d',
+              WebkitTextStroke: '1.8px rgba(255, 255, 255, 0.92)',
+              textShadow: '0 3px 14px rgba(0, 0, 0, 0.95), 0 0 10px rgba(220, 38, 38, 0.3)',
             }}
           >
             {media.top10Rank}
@@ -113,20 +151,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
         <div className="flex items-center gap-1.5">
           {media.rating && (
-          <span className={`bg-black/80 backdrop-blur-sm border ${media.isMature ? 'border-red-500/80 text-red-400' : 'border-zinc-600/80 text-zinc-300'} text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm`}>
-            {media.rating}
-          </span>
-        )}
-        {media.qualityBadge && (
-          <span className="bg-black/80 backdrop-blur-sm border border-zinc-600/80 text-[10px] font-semibold text-zinc-300 px-1.5 py-0.5 rounded shadow-sm">
-            {media.qualityBadge === '4K Ultra HD' ? '4K' : media.qualityBadge}
-          </span>
-        )}
+            <span className={`bg-black/80 backdrop-blur-sm border ${media.isMature ? 'border-red-500/80 text-red-400' : 'border-zinc-600/80 text-zinc-300'} text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm`}>
+              {media.rating}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Card Info & Meta overlay */}
-      <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col justify-end z-10">
+      <div className={`absolute bottom-0 inset-x-0 p-3 flex flex-col justify-end z-10 ${isRank ? 'pl-8 sm:pl-9 md:pl-10' : ''}`}>
         {/* Title */}
         <h3 className="text-sm font-bold text-white truncate drop-shadow-md group-hover:text-red-400 transition-colors">
           {media.title}
