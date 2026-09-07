@@ -4,10 +4,10 @@ import { useApp } from '../../context/AppContext';
 import { MediaCard } from '../media/MediaCard';
 
 export const MyListView: React.FC = () => {
-  const { watchlist, mediaCatalog, setCurrentTab } = useApp();
+  const { watchlist, getWatchlistMediaItems, setCurrentTab } = useApp();
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'tv'>('all');
 
-  const savedMedia = mediaCatalog.filter(m => watchlist.includes(m.id));
+  const savedMedia = getWatchlistMediaItems();
 
   const filteredMedia = filterType === 'all'
     ? savedMedia

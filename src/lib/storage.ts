@@ -73,6 +73,14 @@ export const saveContinueWatchingProgress = (item: ContinueWatchingItem) => {
   }
 };
 
+export const setStoredContinueWatchingList = (items: ContinueWatchingItem[]) => {
+  try {
+    localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify(items));
+  } catch (err) {
+    console.warn('Failed to set continue watching list to localStorage', err);
+  }
+};
+
 export const removeContinueWatchingItem = (mediaId: string) => {
   try {
     const list = getStoredContinueWatching().filter(c => c.mediaId !== mediaId);

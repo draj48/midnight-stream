@@ -7,6 +7,7 @@ import {
   setStoredWatchlist,
   getStoredContinueWatching,
   saveContinueWatchingProgress,
+  setStoredContinueWatchingList,
   removeContinueWatchingItem,
   clearAllContinueWatching,
   getStoredPreferences,
@@ -16,8 +17,8 @@ import {
   setStoredActiveProfileId,
 } from '../lib/storage';
 import { useSpatialNavigation } from './SpatialNavigationContext';
-import { db, auth, doc, collection, setDoc, deleteDoc, onSnapshot } from '../lib/firebase';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { useAuth } from './AuthContext';
+import { db, doc, collection, setDoc, deleteDoc, onSnapshot, getDocs } from '../lib/firebase';
 
 export type MainViewTab = 'home' | 'shows' | 'movies' | 'categories' | 'my-list' | 'search';
 
@@ -33,6 +34,7 @@ interface AppContextType {
   setCurrentTab: (tab: MainViewTab) => void;
   mediaCatalog: MediaItem[];
   watchlist: string[];
+  getWatchlistMediaItems: () => MediaItem[];
   isInWatchlist: (mediaId: string) => boolean;
   toggleWatchlist: (mediaId: string) => void;
   continueWatchingList: ContinueWatchingItem[];
@@ -65,10 +67,13 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { setActiveFocusId, setLastMainFocusId, lastMainFocusId, activeFocusId } = useSpatialNavigation();
+  const { user } = useAuth();
+  const activeUid = user?.uid;
 
   const [currentTab, setCurrentTabState] = useState<MainViewTab>('home');
   const [mediaCatalog, setMediaCatalog] = useState<MediaItem[]>([]);
   const [watchlist, setWatchlistState] = useState<string[]>([]);
+  const [watchlistMediaMap, setWatchlistMediaMap] = useState<Record<string, MediaItem>>({});
   const [continueWatchingList, setContinueWatchingList] = useState<ContinueWatchingItem[]>([]);
   const [selectedMediaForDetails, setSelectedMediaForDetails] = useState<MediaItem | null>(null);
   const [playingSession, setPlayingSession] = useState<PlayingSession | null>(null);
@@ -79,7 +84,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userPreferences, setUserPreferencesState] = useState<UserPreferences>(getStoredPreferences());
   const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(3);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
 
   // Initialize storage & Firebase Sync
   useEffect(() => {
@@ -90,61 +94,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (found) setCurrentProfileState(found);
   }, []);
 
-  // Listen for Firebase Auth changes to bind Firestore listeners
+  // Real-time Firestore Listeners when User is Authenticated (via Google, Email or Passcode Pairing)
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
-    });
-    return () => unsubAuth();
-  }, []);
+    if (!activeUid) return;
 
-  // Real-time Firestore Listeners when User is Authenticated
-  useEffect(() => {
-    if (!authUser) return;
-
-    // 1. Listen to /users/{uid}/myList
-    const myListRef = collection(db, 'users', authUser.uid, 'myList');
+    // 1. Listen to /users/{activeUid}/myList
+    const myListRef = collection(db, 'users', activeUid, 'myList');
     const unsubMyList = onSnapshot(myListRef, (snapshot) => {
       const items: string[] = [];
-      snapshot.forEach(doc => {
-        items.push(doc.id);
+      const mediaMap: Record<string, MediaItem> = {};
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        items.push(id);
+
+        mediaMap[id] = {
+          id,
+          title: data.title || id,
+          type: (data.mediaType || data.type || 'movie') as any,
+          description: data.description || 'Saved to My Watchlist',
+          backdropUrl: data.backdropUrl || data.posterPath || data.posterUrl || '',
+          posterUrl: data.posterPath || data.posterUrl || '',
+          rating: data.rating || 'PG-13',
+          releaseYear: data.releaseYear || new Date().getFullYear(),
+          duration: data.duration || (data.mediaType === 'tv' ? 'TV Series' : 'Movie'),
+          genres: data.genres && data.genres.length > 0 ? data.genres : ['Saved'],
+          matchPercentage: 95,
+          cast: data.cast || [],
+          tags: ['Watchlist'],
+          audioTracks: [],
+          subtitleTracks: [],
+          streamVideoUrl: '',
+          trailerVideoUrl: ''
+        };
       });
+
       setWatchlistState(items);
       setStoredWatchlist(items);
+      setWatchlistMediaMap(mediaMap);
     }, (err) => console.error('Firestore MyList sync error:', err));
 
-    // 2. Listen to /users/{uid}/watchHistory
-    const watchHistoryRef = collection(db, 'users', authUser.uid, 'watchHistory');
+    // 2. Listen to /users/{activeUid}/watchHistory
+    const watchHistoryRef = collection(db, 'users', activeUid, 'watchHistory');
     const unsubHistory = onSnapshot(watchHistoryRef, (snapshot) => {
       const historyItems: ContinueWatchingItem[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
+
+        let lastWatchedAt = Date.now();
+        if (typeof data.lastWatchedAt === 'number') {
+          lastWatchedAt = data.lastWatchedAt;
+        } else if (typeof data.lastWatchedAt === 'string') {
+          const parsed = new Date(data.lastWatchedAt).getTime();
+          if (!isNaN(parsed)) lastWatchedAt = parsed;
+        }
+
         historyItems.push({
           mediaId: docSnap.id,
           progressPercentage: data.progressPercentage || 0,
           currentTime: data.currentTime || 0,
           duration: data.duration || 0,
-          lastWatchedAt: data.lastWatchedAt ? new Date(data.lastWatchedAt).getTime() : Date.now(),
-          seasonNumber: data.seasonNumber,
-          episodeNumber: data.episodeNumber,
-          episodeTitle: data.episodeTitle,
+          lastWatchedAt,
+          seasonNumber: data.seasonNumber || undefined,
+          episodeNumber: data.episodeNumber || undefined,
+          episodeTitle: data.episodeTitle || undefined,
           title: data.title || '',
-          posterUrl: data.posterPath || '',
+          posterUrl: data.posterPath || data.posterUrl || '',
           backdropUrl: data.backdropUrl || '',
           type: data.mediaType || 'movie',
-          rating: data.rating || 0
+          rating: data.rating || '16+'
         });
       });
       // Sort by lastWatchedAt desc
       historyItems.sort((a, b) => b.lastWatchedAt - a.lastWatchedAt);
       setContinueWatchingList(historyItems);
+      setStoredContinueWatchingList(historyItems);
     }, (err) => console.error('Firestore WatchHistory sync error:', err));
 
     return () => {
       unsubMyList();
       unsubHistory();
     };
-  }, [authUser]);
+  }, [activeUid]);
 
   useEffect(() => {
     fetchAllMedia(userPreferences.includeMature).then(setMediaCatalog).catch(console.error);
@@ -169,6 +201,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 50);
   }, [setActiveFocusId]);
 
+  const getWatchlistMediaItems = useCallback((): MediaItem[] => {
+    return watchlist.map(id => {
+      const catalogMatch = mediaCatalog.find(m => m.id === id);
+      if (catalogMatch) return catalogMatch;
+      if (watchlistMediaMap[id]) return watchlistMediaMap[id];
+      return {
+        id,
+        title: id,
+        type: 'movie',
+        description: 'Saved Item',
+        backdropUrl: '',
+        posterUrl: '',
+        rating: 'PG-13',
+        releaseYear: new Date().getFullYear(),
+        duration: 'Movie',
+        genres: ['Saved'],
+        matchPercentage: 95,
+        cast: [],
+        tags: [],
+        audioTracks: [],
+        subtitleTracks: [],
+        streamVideoUrl: '',
+        trailerVideoUrl: ''
+      };
+    });
+  }, [watchlist, mediaCatalog, watchlistMediaMap]);
+
   const isInWatchlist = useCallback((mediaId: string) => {
     return watchlist.includes(mediaId);
   }, [watchlist]);
@@ -179,18 +238,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const next = exists ? prev.filter(id => id !== mediaId) : [...prev, mediaId];
       setStoredWatchlist(next);
 
-      // Firestore sync if logged in
-      if (authUser) {
-        const itemRef = doc(db, 'users', authUser.uid, 'myList', mediaId);
+      // Firestore sync if user is logged in
+      if (activeUid) {
+        const itemRef = doc(db, 'users', activeUid, 'myList', mediaId);
         if (exists) {
           deleteDoc(itemRef).catch(console.error);
         } else {
-          const media = mediaCatalog.find(m => m.id === mediaId);
+          const media = mediaCatalog.find(m => m.id === mediaId) || watchlistMediaMap[mediaId];
           setDoc(itemRef, {
             mediaId,
             title: media?.title || '',
             posterPath: media?.posterUrl || '',
+            backdropUrl: media?.backdropUrl || '',
             mediaType: media?.type || 'movie',
+            description: media?.description || '',
+            rating: media?.rating || 'PG-13',
+            releaseYear: media?.releaseYear || new Date().getFullYear(),
+            genres: media?.genres || [],
+            cast: media?.cast || [],
+            duration: media?.duration || '',
             addedAt: new Date().toISOString()
           }, { merge: true }).catch(console.error);
         }
@@ -198,7 +264,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return next;
     });
-  }, [authUser, mediaCatalog]);
+  }, [activeUid, mediaCatalog, watchlistMediaMap]);
 
   const saveProgress = useCallback((
     media: MediaItem,
@@ -229,15 +295,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setContinueWatchingList(getStoredContinueWatching());
 
     // Firestore sync if logged in
-    if (authUser) {
-      const historyRef = doc(db, 'users', authUser.uid, 'watchHistory', media.id);
+    if (activeUid) {
+      const historyRef = doc(db, 'users', activeUid, 'watchHistory', media.id);
       setDoc(historyRef, {
         mediaId: media.id,
         title: media.title,
         posterPath: media.posterUrl || '',
+        posterUrl: media.posterUrl || '',
         backdropUrl: media.backdropUrl || '',
         mediaType: media.type,
-        rating: media.rating || 0,
+        rating: media.rating || '16+',
         seasonNumber: isTv ? (episode?.seasonNumber || 1) : null,
         episodeNumber: isTv ? (episode?.episodeNumber || 1) : null,
         episodeTitle: isTv ? (episode?.title || null) : null,
@@ -247,22 +314,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastWatchedAt: new Date().toISOString()
       }, { merge: true }).catch(console.error);
     }
-  }, [authUser]);
+  }, [activeUid]);
 
   const removeProgress = useCallback((mediaId: string) => {
     removeContinueWatchingItem(mediaId);
     setContinueWatchingList(getStoredContinueWatching());
 
-    if (authUser) {
-      const historyRef = doc(db, 'users', authUser.uid, 'watchHistory', mediaId);
+    if (activeUid) {
+      const historyRef = doc(db, 'users', activeUid, 'watchHistory', mediaId);
       deleteDoc(historyRef).catch(console.error);
     }
-  }, [authUser]);
+  }, [activeUid]);
 
-  const clearContinueWatching = useCallback(() => {
+  const clearContinueWatching = useCallback(async () => {
     clearAllContinueWatching();
     setContinueWatchingList([]);
-  }, []);
+
+    if (activeUid) {
+      try {
+        const historyRef = collection(db, 'users', activeUid, 'watchHistory');
+        const snap = await getDocs(historyRef);
+        for (const docSnap of snap.docs) {
+          await deleteDoc(docSnap.ref);
+        }
+      } catch (err) {
+        console.error('Failed to clear watchHistory from Firestore', err);
+      }
+    }
+  }, [activeUid]);
 
   const openDetailsModal = useCallback(async (media: MediaItem, fromFocusId?: string) => {
     if (activeFocusId) {
@@ -409,6 +488,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentTab,
         mediaCatalog,
         watchlist,
+        getWatchlistMediaItems,
         isInWatchlist,
         toggleWatchlist,
         continueWatchingList,
