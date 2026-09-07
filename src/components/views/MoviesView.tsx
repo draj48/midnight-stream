@@ -19,7 +19,7 @@ export const MoviesView: React.FC = () => {
       {/* Movies Hero */}
       {movies.length > 0 && <HeroBanner items={movies.slice(0, 5)} />}
 
-      <div className="relative z-20 -mt-16 sm:-mt-20 md:-mt-24 space-y-2">
+      <div className="relative z-20 max-w-[1550px] mx-auto space-y-3 sm:space-y-6 pt-2 sm:pt-4">
         <ContentRow
           id="movies-spotlight"
           title="Spotlight Feature Films"

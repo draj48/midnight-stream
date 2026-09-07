@@ -1,16 +1,11 @@
 import React from 'react';
 import { HeroBanner } from '../media/HeroBanner';
 import { ContentRow } from '../media/ContentRow';
+import { ContinueWatchingRow } from '../media/ContinueWatchingRow';
 import { useApp } from '../../context/AppContext';
 
 export const HomeView: React.FC = () => {
   const { mediaCatalog, continueWatchingList } = useApp();
-
-  
-
-  const continueWatchingMedia = mediaCatalog.filter(m =>
-    continueWatchingList.some(c => c.mediaId === m.id)
-  );
 
   const top10Items = mediaCatalog.filter(m => m.isTop10).sort((a, b) => (a.top10Rank || 99) - (b.top10Rank || 99));
   const trendingItems = mediaCatalog.filter(m => m.isTrending);
@@ -25,19 +20,11 @@ export const HomeView: React.FC = () => {
       {/* Hero Featured Banner */}
       {top10Items.length > 0 && <HeroBanner items={top10Items.slice(0, 5)} />}
 
-      {/* Rows Container with subtle negative margin for Netflix overlap effect */}
-      <div className="relative z-20 -mt-16 sm:-mt-20 md:-mt-24 space-y-2">
-        {/* Continue Watching Row */}
-        {continueWatchingMedia.length > 0 && (
-          <ContentRow
-            id="continue-watching"
-            title="Continue Watching for Alex"
-            subtitle="Resume playback from your last position"
-            items={continueWatchingMedia}
-            continueWatchingList={continueWatchingList}
-            variant="landscape"
-            rowIndex={0}
-          />
+      {/* Rows Container framed nicely below Hero Card */}
+      <div className="relative z-20 max-w-[1550px] mx-auto space-y-3 sm:space-y-6 pt-2 sm:pt-4">
+        {/* Dedicated Continue Watching Row */}
+        {continueWatchingList.length > 0 && (
+          <ContinueWatchingRow items={continueWatchingList} rowIndex={0} />
         )}
 
         {/* Top 10 in World Today */}

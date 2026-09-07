@@ -77,6 +77,12 @@ export interface ContinueWatchingItem {
   seasonNumber?: number;
   episodeNumber?: number;
   episodeTitle?: string;
+  title?: string;
+  posterUrl?: string;
+  backdropUrl?: string;
+  type?: MediaType;
+  rating?: string;
+  totalEpisodes?: number;
 }
 
 export interface MediaCategory {

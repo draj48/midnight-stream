@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "WatchHistory": {
+      "title": "Watch History Item",
+      "description": "User watch progress and history for movies and shows",
+      "type": "object",
+      "properties": {
+        "mediaId": { "type": "string" },
+        "title": { "type": "string" },
+        "posterPath": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["movie", "tv", "anime"] },
+        "seasonNumber": { "type": "number" },
+        "episodeNumber": { "type": "number" },
+        "progressPercentage": { "type": "number" },
+        "lastWatchedAt": { "type": "string" }
+      },
+      "required": ["mediaId", "title", "mediaType", "lastWatchedAt"]
+    },
+    "MyList": {
+      "title": "My List Item",
+      "description": "Saved watchlist / favorites item for a user",
+      "type": "object",
+      "properties": {
+        "mediaId": { "type": "string" },
+        "title": { "type": "string" },
+        "posterPath": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["movie", "tv", "anime"] },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["mediaId", "title", "mediaType", "addedAt"]
+    },
+    "DevicePasscode": {
+      "title": "Device Login Passcode",
+      "description": "Permanent 4-digit login passcode generated for TV or secondary device pairing",
+      "type": "object",
+      "properties": {
+        "passcode": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "isPermanent": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["passcode", "userId", "userEmail"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document"
+    },
+    "/users/{userId}/watchHistory/{mediaId}": {
+      "schema": "WatchHistory",
+      "description": "User watch history item"
+    },
+    "/users/{userId}/myList/{mediaId}": {
+      "schema": "MyList",
+      "description": "User watchlist item"
+    },
+    "/devicePasscodes/{passcode}": {
+      "schema": "DevicePasscode",
+      "description": "Temporary 4-digit passcodes for quick TV / cross-device login"
+    }
+  }
+}

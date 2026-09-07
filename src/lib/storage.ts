@@ -55,33 +55,7 @@ export const getStoredContinueWatching = (): ContinueWatchingItem[] => {
   try {
     const raw = localStorage.getItem(CONTINUE_WATCHING_KEY);
     if (!raw) {
-      // Seed rich default continue watching items
-      return [
-        {
-          mediaId: 'm-1',
-          progressPercentage: 65,
-          currentTime: 5600,
-          duration: 8640,
-          lastWatchedAt: Date.now() - 1000 * 60 * 30, // 30 mins ago
-        },
-        {
-          mediaId: 's-1',
-          progressPercentage: 42,
-          currentTime: 1450,
-          duration: 3480,
-          seasonNumber: 1,
-          episodeNumber: 1,
-          episodeTitle: 'The Observer Effect',
-          lastWatchedAt: Date.now() - 1000 * 60 * 60 * 4, // 4 hours ago
-        },
-        {
-          mediaId: 'm-2',
-          progressPercentage: 88,
-          currentTime: 6900,
-          duration: 7920,
-          lastWatchedAt: Date.now() - 1000 * 60 * 60 * 24, // 1 day ago
-        }
-      ];
+      return [];
     }
     return JSON.parse(raw);
   } catch {
@@ -92,7 +66,7 @@ export const getStoredContinueWatching = (): ContinueWatchingItem[] => {
 export const saveContinueWatchingProgress = (item: ContinueWatchingItem) => {
   try {
     const list = getStoredContinueWatching().filter(c => c.mediaId !== item.mediaId);
-    const updated = [item, ...list].slice(0, 15); // keep last 15 items
+    const updated = [item, ...list].slice(0, 20); // keep last 20 items
     localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify(updated));
   } catch (err) {
     console.warn('Failed to save progress to localStorage', err);
@@ -105,6 +79,14 @@ export const removeContinueWatchingItem = (mediaId: string) => {
     localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify(list));
   } catch (err) {
     console.warn('Failed to remove continue watching item', err);
+  }
+};
+
+export const clearAllContinueWatching = () => {
+  try {
+    localStorage.setItem(CONTINUE_WATCHING_KEY, JSON.stringify([]));
+  } catch (err) {
+    console.warn('Failed to clear continue watching', err);
   }
 };
 

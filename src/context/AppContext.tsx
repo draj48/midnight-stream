@@ -8,6 +8,7 @@ import {
   getStoredContinueWatching,
   saveContinueWatchingProgress,
   removeContinueWatchingItem,
+  clearAllContinueWatching,
   getStoredPreferences,
   saveStoredPreferences,
   UserPreferences,
@@ -15,6 +16,8 @@ import {
   setStoredActiveProfileId,
 } from '../lib/storage';
 import { useSpatialNavigation } from './SpatialNavigationContext';
+import { db, auth, doc, collection, setDoc, deleteDoc, onSnapshot } from '../lib/firebase';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 export type MainViewTab = 'home' | 'shows' | 'movies' | 'categories' | 'my-list' | 'search';
 
@@ -35,6 +38,7 @@ interface AppContextType {
   continueWatchingList: ContinueWatchingItem[];
   saveProgress: (media: MediaItem, currentTime: number, duration: number, episode?: Episode) => void;
   removeProgress: (mediaId: string) => void;
+  clearContinueWatching: () => void;
   selectedMediaForDetails: MediaItem | null;
   openDetailsModal: (media: MediaItem, fromFocusId?: string) => void;
   closeDetailsModal: () => void;
@@ -75,28 +79,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userPreferences, setUserPreferencesState] = useState<UserPreferences>(getStoredPreferences());
   const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(3);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
 
-  // Initialize storage
+  // Initialize storage & Firebase Sync
   useEffect(() => {
     setWatchlistState(getStoredWatchlist());
     setContinueWatchingList(getStoredContinueWatching());
     const profileId = getStoredActiveProfileId();
     const found = USER_PROFILES.find(p => p.id === profileId);
     if (found) setCurrentProfileState(found);
-    
-    
   }, []);
+
+  // Listen for Firebase Auth changes to bind Firestore listeners
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+    });
+    return () => unsubAuth();
+  }, []);
+
+  // Real-time Firestore Listeners when User is Authenticated
+  useEffect(() => {
+    if (!authUser) return;
+
+    // 1. Listen to /users/{uid}/myList
+    const myListRef = collection(db, 'users', authUser.uid, 'myList');
+    const unsubMyList = onSnapshot(myListRef, (snapshot) => {
+      const items: string[] = [];
+      snapshot.forEach(doc => {
+        items.push(doc.id);
+      });
+      setWatchlistState(items);
+      setStoredWatchlist(items);
+    }, (err) => console.error('Firestore MyList sync error:', err));
+
+    // 2. Listen to /users/{uid}/watchHistory
+    const watchHistoryRef = collection(db, 'users', authUser.uid, 'watchHistory');
+    const unsubHistory = onSnapshot(watchHistoryRef, (snapshot) => {
+      const historyItems: ContinueWatchingItem[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        historyItems.push({
+          mediaId: docSnap.id,
+          progressPercentage: data.progressPercentage || 0,
+          currentTime: data.currentTime || 0,
+          duration: data.duration || 0,
+          lastWatchedAt: data.lastWatchedAt ? new Date(data.lastWatchedAt).getTime() : Date.now(),
+          seasonNumber: data.seasonNumber,
+          episodeNumber: data.episodeNumber,
+          episodeTitle: data.episodeTitle,
+          title: data.title || '',
+          posterUrl: data.posterPath || '',
+          backdropUrl: data.backdropUrl || '',
+          type: data.mediaType || 'movie',
+          rating: data.rating || 0
+        });
+      });
+      // Sort by lastWatchedAt desc
+      historyItems.sort((a, b) => b.lastWatchedAt - a.lastWatchedAt);
+      setContinueWatchingList(historyItems);
+    }, (err) => console.error('Firestore WatchHistory sync error:', err));
+
+    return () => {
+      unsubMyList();
+      unsubHistory();
+    };
+  }, [authUser]);
 
   useEffect(() => {
     fetchAllMedia(userPreferences.includeMature).then(setMediaCatalog).catch(console.error);
   }, [userPreferences.includeMature]);
 
-
-
-
   const setCurrentTab = useCallback((tab: MainViewTab) => {
     setCurrentTabState(tab);
-    // When switching tabs, focus appropriate starting element
     setTimeout(() => {
       if (tab === 'search') {
         setActiveFocusId('search-input-field');
@@ -123,18 +178,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const exists = prev.includes(mediaId);
       const next = exists ? prev.filter(id => id !== mediaId) : [...prev, mediaId];
       setStoredWatchlist(next);
+
+      // Firestore sync if logged in
+      if (authUser) {
+        const itemRef = doc(db, 'users', authUser.uid, 'myList', mediaId);
+        if (exists) {
+          deleteDoc(itemRef).catch(console.error);
+        } else {
+          const media = mediaCatalog.find(m => m.id === mediaId);
+          setDoc(itemRef, {
+            mediaId,
+            title: media?.title || '',
+            posterPath: media?.posterUrl || '',
+            mediaType: media?.type || 'movie',
+            addedAt: new Date().toISOString()
+          }, { merge: true }).catch(console.error);
+        }
+      }
+
       return next;
     });
-  }, []);
+  }, [authUser, mediaCatalog]);
 
   const saveProgress = useCallback((
     media: MediaItem,
-    currentTime: number,
-    duration: number,
+    currentTime: number = 0,
+    duration: number = 0,
     episode?: Episode
   ) => {
-    if (duration <= 0) return;
-    const progressPercentage = Math.min(100, Math.round((currentTime / duration) * 100));
+    const isTv = media.type === 'tv';
+    const progressPercentage = duration > 0 ? Math.min(100, Math.max(1, Math.round((currentTime / duration) * 100))) : 0;
 
     const item: ContinueWatchingItem = {
       mediaId: media.id,
@@ -142,18 +215,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentTime: Math.round(currentTime),
       duration: Math.round(duration),
       lastWatchedAt: Date.now(),
-      seasonNumber: episode?.seasonNumber,
-      episodeNumber: episode?.episodeNumber,
-      episodeTitle: episode?.title,
+      seasonNumber: isTv ? (episode?.seasonNumber || 1) : undefined,
+      episodeNumber: isTv ? (episode?.episodeNumber || 1) : undefined,
+      episodeTitle: isTv ? (episode?.title || `Episode ${episode?.episodeNumber || 1}`) : undefined,
+      title: media.title,
+      posterUrl: media.posterUrl,
+      backdropUrl: media.backdropUrl,
+      type: media.type,
+      rating: media.rating,
     };
 
     saveContinueWatchingProgress(item);
     setContinueWatchingList(getStoredContinueWatching());
-  }, []);
+
+    // Firestore sync if logged in
+    if (authUser) {
+      const historyRef = doc(db, 'users', authUser.uid, 'watchHistory', media.id);
+      setDoc(historyRef, {
+        mediaId: media.id,
+        title: media.title,
+        posterPath: media.posterUrl || '',
+        backdropUrl: media.backdropUrl || '',
+        mediaType: media.type,
+        rating: media.rating || 0,
+        seasonNumber: isTv ? (episode?.seasonNumber || 1) : null,
+        episodeNumber: isTv ? (episode?.episodeNumber || 1) : null,
+        episodeTitle: isTv ? (episode?.title || null) : null,
+        currentTime: Math.round(currentTime),
+        duration: Math.round(duration),
+        progressPercentage,
+        lastWatchedAt: new Date().toISOString()
+      }, { merge: true }).catch(console.error);
+    }
+  }, [authUser]);
 
   const removeProgress = useCallback((mediaId: string) => {
     removeContinueWatchingItem(mediaId);
     setContinueWatchingList(getStoredContinueWatching());
+
+    if (authUser) {
+      const historyRef = doc(db, 'users', authUser.uid, 'watchHistory', mediaId);
+      deleteDoc(historyRef).catch(console.error);
+    }
+  }, [authUser]);
+
+  const clearContinueWatching = useCallback(() => {
+    clearAllContinueWatching();
+    setContinueWatchingList([]);
   }, []);
 
   const openDetailsModal = useCallback(async (media: MediaItem, fromFocusId?: string) => {
@@ -306,6 +414,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         continueWatchingList,
         saveProgress,
         removeProgress,
+        clearContinueWatching,
         selectedMediaForDetails,
         openDetailsModal,
         closeDetailsModal,

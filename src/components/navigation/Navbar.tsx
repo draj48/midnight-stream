@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import {  Search, Bell, Tv, Film, MonitorPlay, Sparkles, Check, ChevronDown, Radio , User, Settings, Crown } from 'lucide-react';
+import { Search, User, Settings, Crown, LogIn } from 'lucide-react';
 import { useApp, MainViewTab } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { useFocusable, useSpatialNavigation } from '../../context/SpatialNavigationContext';
 
 export const Navbar: React.FC = () => {
   const {
     currentTab,
     setCurrentTab,
-    currentProfile,
     setIsProfileModalOpen,
-    unreadNotificationCount,
-    isNotificationsOpen,
-    setIsNotificationsOpen,
   } = useApp();
 
+  const { user, setIsAuthModalOpen } = useAuth();
   const { isRemoteOverlayVisible, setIsRemoteOverlayVisible, isTVMode } = useSpatialNavigation();
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -62,10 +60,8 @@ export const Navbar: React.FC = () => {
     onSelect: () => setCurrentTab('search'),
   });
 
-
-
-  const profileBtn = useFocusable({
-    id: 'nav-profile',
+  const settingsBtn = useFocusable({
+    id: 'nav-settings',
     zoneId: 'nav',
     onSelect: () => setIsProfileModalOpen(true),
   });
@@ -170,21 +166,26 @@ export const Navbar: React.FC = () => {
             <span className="hidden xl:inline text-xs font-medium">Search</span>
           </button>
 
-          {/* User Profile Switcher */}
+          {/* Settings Button */}
           <button
-            ref={profileBtn.ref}
+            ref={settingsBtn.ref}
             onClick={() => setIsProfileModalOpen(true)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-              profileBtn.isFocused
+            className={`p-2 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-2 text-sm transition-all cursor-pointer ${
+              settingsBtn.isFocused
                 ? 'bg-white text-zinc-950 scale-105 ring-2 ring-white'
                 : 'bg-zinc-900/80 border border-zinc-700/60 hover:bg-zinc-800 text-zinc-200'
             }`}
-            data-focused={profileBtn.isFocused}
-            aria-label="Settings"
+            aria-label="App Settings and User Profile"
+            data-focused={settingsBtn.isFocused}
           >
-            <User className="w-4 h-4 text-zinc-400" />
-            <span className="text-xs font-semibold hidden md:inline">Guest</span>
-            <Settings className="w-3.5 h-3.5 text-zinc-400 ml-1" />
+            {user && user.photoURL ? (
+              <img src={user.photoURL} alt="Avatar" className="w-4 h-4 rounded-full object-cover" />
+            ) : (
+              <Settings className="w-4 h-4 text-zinc-400" />
+            )}
+            <span className="hidden md:inline text-xs font-semibold">
+              {user ? (user.displayName || user.email?.split('@')[0]) : 'Settings'}
+            </span>
           </button>
         </div>
       </div>
