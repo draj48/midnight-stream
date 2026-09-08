@@ -2,7 +2,6 @@ import React from 'react';
 import { SpatialNavigationProvider } from './context/SpatialNavigationContext';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
-import { AniListProvider } from './context/AniListContext';
 import { Navbar } from './components/navigation/Navbar';
 import { TVRemoteWidget } from './components/navigation/TVRemoteWidget';
 import { applyTVOptimizations } from './lib/tvOptimizer';
@@ -16,7 +15,6 @@ import { DetailsModal } from './components/media/DetailsModal';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { ProfileModal } from './components/profile/ProfileModal';
 import { AuthModal } from './components/profile/AuthModal';
-import { AniListAuthModal } from './components/anilist/AniListAuthModal';
 import { BackToTop } from './components/navigation/BackToTop';
 
 const MainContent: React.FC = () => {
@@ -52,7 +50,6 @@ const MainContent: React.FC = () => {
       <VideoPlayer />
       <ProfileModal />
       <AuthModal />
-      <AniListAuthModal />
       <TVRemoteWidget />
       <BackToTop focusId="global-main-back-to-top" zoneId="global" threshold={300} />
 
@@ -96,9 +93,7 @@ export default function App() {
     <SpatialNavigationProvider>
       <AuthProvider>
         <AppProvider>
-          <AniListProvider>
-            <MainContent />
-          </AniListProvider>
+          <MainContent />
         </AppProvider>
       </AuthProvider>
     </SpatialNavigationProvider>

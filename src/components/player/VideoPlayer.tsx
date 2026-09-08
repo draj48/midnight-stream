@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Server } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { useAniList } from '../../context/AniListContext';
 import { useFocusable } from '../../context/SpatialNavigationContext';
 
 interface StreamServer {
@@ -52,8 +51,6 @@ const STREAM_SERVERS: StreamServer[] = [
 
 const PlayerContent: React.FC = () => {
   const { playingSession, stopPlayback, saveProgress } = useApp();
-  const { isAnime, autoSyncEpisodeProgress, isLoggedIn } = useAniList();
-  const [syncedBadge, setSyncedBadge] = useState<string | null>(null);
   const [selectedServerId, setSelectedServerId] = useState<string>('pvrplay');
   
   const backBtn = useFocusable({
@@ -95,23 +92,6 @@ const PlayerContent: React.FC = () => {
     saveProgress(media, 0, 0, tvEpisode);
   }, [media?.id, seasonNum, epNum, isSeries, episode]);
 
-  // Auto-sync episode progress to AniList if this media is an Anime
-  useEffect(() => {
-    if (!media || !isAnime(media)) return;
-
-    const totalEps = media.seasons?.reduce((acc, s) => acc + (s.episodes?.length || 0), 0) || 12;
-    const currentEpNumber = isSeries ? epNum : 1;
-
-    autoSyncEpisodeProgress(media.title, currentEpNumber, totalEps, media.id);
-    setSyncedBadge(`AniList: Synced Ep ${currentEpNumber}`);
-
-    const timer = setTimeout(() => {
-      setSyncedBadge(null);
-    }, 4500);
-
-    return () => clearTimeout(timer);
-  }, [media?.id, epNum, isSeries, media?.title]);
-
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
       {/* Top Controls Bar */}
@@ -131,16 +111,6 @@ const PlayerContent: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
             <span className="font-bold text-sm">Back</span>
           </button>
-
-          {syncedBadge && isAnime(media) && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0c1626]/90 border border-[#3db4f2]/50 text-white text-xs font-semibold backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-left-4 duration-300">
-              <div className="w-4 h-4 rounded bg-[#3db4f2] flex items-center justify-center font-black text-white text-[8px]">
-                AL
-              </div>
-              <span className="text-zinc-200">{syncedBadge}</span>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            </div>
-          )}
         </div>
 
         {/* Right: Server Switcher */}

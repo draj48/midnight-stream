@@ -3,13 +3,6 @@ import { ContinueWatchingItem, Episode, MediaItem, Season, UserProfile } from '.
 import { USER_PROFILES } from '../data/mockMedia';
 import { fetchAllMedia, fetchMediaDetails } from '../services/tmdb';
 import {
-  getStoredWatchlist,
-  setStoredWatchlist,
-  getStoredContinueWatching,
-  saveContinueWatchingProgress,
-  setStoredContinueWatchingList,
-  removeContinueWatchingItem,
-  clearAllContinueWatching,
   getStoredPreferences,
   saveStoredPreferences,
   UserPreferences,
@@ -67,7 +60,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { setActiveFocusId, setLastMainFocusId, lastMainFocusId, activeFocusId } = useSpatialNavigation();
-  const { user } = useAuth();
+  const { user, setIsAuthModalOpen } = useAuth();
   const activeUid = user?.uid;
 
   const [currentTab, setCurrentTabState] = useState<MainViewTab>('home');
@@ -87,12 +80,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Initialize storage & Firebase Sync
   useEffect(() => {
-    setWatchlistState(getStoredWatchlist());
-    setContinueWatchingList(getStoredContinueWatching());
+    // Note: Watchlist and Continue Watching are now only loaded from Firestore
+    // to prevent local storage bloat and ensure consistency.
     const profileId = getStoredActiveProfileId();
     const found = USER_PROFILES.find(p => p.id === profileId);
     if (found) setCurrentProfileState(found);
   }, []);
+
+  // Set defaults when user signs out
+  useEffect(() => {
+    if (!activeUid) {
+      setWatchlistState([]);
+      setContinueWatchingList([]);
+      setWatchlistMediaMap({});
+    }
+  }, [activeUid]);
 
   // Real-time Firestore Listeners when User is Authenticated (via Google, Email or Passcode Pairing)
   useEffect(() => {
@@ -131,7 +133,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       setWatchlistState(items);
-      setStoredWatchlist(items);
       setWatchlistMediaMap(mediaMap);
     }, (err) => console.error('Firestore MyList sync error:', err));
 
@@ -169,7 +170,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Sort by lastWatchedAt desc
       historyItems.sort((a, b) => b.lastWatchedAt - a.lastWatchedAt);
       setContinueWatchingList(historyItems);
-      setStoredContinueWatchingList(historyItems);
     }, (err) => console.error('Firestore WatchHistory sync error:', err));
 
     return () => {
@@ -233,10 +233,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [watchlist]);
 
   const toggleWatchlist = useCallback((mediaId: string) => {
+    // If not logged in, we could optionally prompt them to log in, but for now we just
+    // don't allow saving if not logged in to avoid local storage bloat, or we can just
+    // let the local state update but it will wipe on reload.
+    // The user requested: "लॉगिन के बगैर ये कंटिन्यू वाचिंग वगैरह शो नहीं करेगा"
+    if (!activeUid) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     setWatchlistState(prev => {
       const exists = prev.includes(mediaId);
       const next = exists ? prev.filter(id => id !== mediaId) : [...prev, mediaId];
-      setStoredWatchlist(next);
 
       // Firestore sync if user is logged in
       if (activeUid) {
@@ -291,8 +299,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rating: media.rating,
     };
 
-    saveContinueWatchingProgress(item);
-    setContinueWatchingList(getStoredContinueWatching());
+    setContinueWatchingList(prev => {
+      const filtered = prev.filter(c => c.mediaId !== item.mediaId);
+      return [item, ...filtered].slice(0, 20);
+    });
 
     // Firestore sync if logged in
     if (activeUid) {
@@ -317,8 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [activeUid]);
 
   const removeProgress = useCallback((mediaId: string) => {
-    removeContinueWatchingItem(mediaId);
-    setContinueWatchingList(getStoredContinueWatching());
+    setContinueWatchingList(prev => prev.filter(c => c.mediaId !== mediaId));
 
     if (activeUid) {
       const historyRef = doc(db, 'users', activeUid, 'watchHistory', mediaId);
@@ -327,7 +336,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [activeUid]);
 
   const clearContinueWatching = useCallback(async () => {
-    clearAllContinueWatching();
     setContinueWatchingList([]);
 
     if (activeUid) {

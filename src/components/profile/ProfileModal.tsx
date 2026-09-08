@@ -2,7 +2,6 @@ import React from 'react';
 import { X, Check, Tv, Sliders, Volume2, Shield, Trash2, UserPlus, Sparkles, EyeOff, LogIn, ExternalLink, LogOut, CheckCircle2, KeyRound, User as UserIcon } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
-import { useAniList } from '../../context/AniListContext';
 import { USER_PROFILES } from '../../data/mockMedia';
 import { useFocusable } from '../../context/SpatialNavigationContext';
 
@@ -17,15 +16,6 @@ export const ProfileModal: React.FC = () => {
   } = useApp();
 
   const { user, setIsAuthModalOpen } = useAuth();
-
-  const {
-    isLoggedIn: isAniListLoggedIn,
-    user: anilistUser,
-    setIsAuthModalOpen: setAniListAuthModalOpen,
-    logout: logoutAniList,
-    autoSyncEnabled: anilistAutoSync,
-    setAutoSyncEnabled: setAniListAutoSync,
-  } = useAniList();
 
   
   
@@ -163,100 +153,6 @@ export const ProfileModal: React.FC = () => {
             <UserIcon className="w-3.5 h-3.5" />
             <span>{user ? 'TV Passcode / Account' : 'Sign In / Use Passcode'}</span>
           </button>
-        </div>
-
-
-
-        {/* AniList Integration Section */}
-        <div className="pt-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <div className="w-5 h-5 rounded-lg bg-[#3db4f2] flex items-center justify-center font-black text-white text-[10px]">
-                AL
-              </div>
-              <span>AniList Sync & Anime Tracker</span>
-            </h3>
-
-            {isAniListLoggedIn && (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-800/50">
-                <CheckCircle2 className="w-3 h-3" />
-                Connected
-              </span>
-            )}
-          </div>
-
-          <div className="bg-zinc-900/80 p-4 rounded-2xl border border-[#3db4f2]/30 space-y-3">
-            {isAniListLoggedIn && anilistUser ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={anilistUser.avatarUrl}
-                      alt={anilistUser.name}
-                      className="w-10 h-10 rounded-xl object-cover border-2 border-[#3db4f2]"
-                    />
-                    <div>
-                      <h4 className="font-bold text-white text-sm">@{anilistUser.name}</h4>
-                      <p className="text-zinc-400 text-[11px]">
-                        {anilistUser.stats ? `${anilistUser.stats.animeCount} anime tracked • ${anilistUser.stats.episodesWatched} episodes` : 'AniList Account Connected'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setAniListAuthModalOpen(true)}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Manage
-                    </button>
-                    <button
-                      onClick={() => logoutAniList()}
-                      className="p-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/40 text-rose-400 border border-rose-900/50 transition-colors cursor-pointer"
-                      title="Disconnect AniList"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80 text-xs">
-                  <div>
-                    <span className="font-semibold text-zinc-200 block">Auto-Sync Episode Progress</span>
-                    <span className="text-zinc-400 text-[11px]">Auto updates watching progress when playing anime</span>
-                  </div>
-                  <button
-                    onClick={() => setAniListAutoSync(!anilistAutoSync)}
-                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      anilistAutoSync ? 'bg-[#3db4f2]' : 'bg-zinc-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
-                        anilistAutoSync ? 'right-1' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="font-semibold text-zinc-200">Connect to AniList</h4>
-                  <p className="text-zinc-400 text-[11px]">
-                    Track watching episodes, add to Plan to Watch, and sync scores automatically for all anime titles.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setAniListAuthModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3db4f2] hover:bg-[#32a2dd] text-white text-xs font-bold transition-all shadow-md shadow-[#3db4f2]/30 cursor-pointer hover:scale-105 shrink-0"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Login to AniList</span>
-                </button>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* TV & Playback Settings */}

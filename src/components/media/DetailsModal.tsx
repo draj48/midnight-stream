@@ -22,7 +22,6 @@ import { useApp } from '../../context/AppContext';
 import { useFocusable } from '../../context/SpatialNavigationContext';
 import { useNSFWBlur } from './useNSFWBlur';
 import { fetchSeasonEpisodes, fetchRecommendations } from '../../services/tmdb';
-import { AniListTracker } from '../anilist/AniListTracker';
 import { BackToTop } from '../navigation/BackToTop';
 
 // Sub-component for each recommended media item to ensure full NSFW blur & uncover support
@@ -515,9 +514,6 @@ export const DetailsModal: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* AniList Tracker (Shown ONLY for Anime titles like Solo Leveling, Demon Slayer, etc.) */}
-          <AniListTracker media={media} />
 
           {/* Navigation Tabs (Episodes for TV Series / Recommended / About) */}
           <div className="border-t border-zinc-800/80 pt-6">
