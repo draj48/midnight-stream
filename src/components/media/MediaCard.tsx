@@ -46,11 +46,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const isLandscape = variant === 'landscape' || !!continueWatching;
   
   const imageUrl = isLandscape ? media.backdropUrl : media.posterUrl;
+  const isAdult = !!(media.isMature || media.rating === 'A');
   const { isNSFW, userUnblurred, toggleUnblur, ref: nsfwRef } = useNSFWBlur(
     imageUrl,
     userPreferences.nsfwFilter,
     userPreferences.nsfwTolerance ?? 50,
-    media.nsfwScore
+    media.nsfwScore,
+    isAdult
   );
   const isRank = variant === 'rank';
 

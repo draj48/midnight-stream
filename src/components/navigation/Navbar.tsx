@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Settings, Crown, LogIn } from 'lucide-react';
+import { Search, Settings, Crown } from 'lucide-react';
 import { useApp, MainViewTab } from '../../context/AppContext';
-import { useAuth } from '../../context/AuthContext';
 import { useFocusable, useSpatialNavigation } from '../../context/SpatialNavigationContext';
 
 export const Navbar: React.FC = () => {
@@ -11,7 +10,6 @@ export const Navbar: React.FC = () => {
     setIsProfileModalOpen,
   } = useApp();
 
-  const { user, setIsAuthModalOpen } = useAuth();
   const { isRemoteOverlayVisible, setIsRemoteOverlayVisible, isTVMode } = useSpatialNavigation();
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -178,13 +176,9 @@ export const Navbar: React.FC = () => {
             aria-label="App Settings and User Profile"
             data-focused={settingsBtn.isFocused}
           >
-            {user && user.photoURL ? (
-              <img src={user.photoURL} alt="Avatar" className="w-4 h-4 rounded-full object-cover" />
-            ) : (
-              <Settings className="w-4 h-4 text-zinc-400" />
-            )}
+            <Settings className="w-4 h-4 text-zinc-400" />
             <span className="hidden md:inline text-xs font-semibold">
-              {user ? (user.displayName || user.email?.split('@')[0]) : 'Settings'}
+              Settings
             </span>
           </button>
         </div>

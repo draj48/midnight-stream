@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Server } from 'lucide-react';
+import { ArrowLeft, Server } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useFocusable } from '../../context/SpatialNavigationContext';
 
@@ -13,45 +13,18 @@ interface StreamServer {
 const STREAM_SERVERS: StreamServer[] = [
   {
     id: 'pvrplay',
-    name: 'Server 1 (PVR)',
+    name: 'PVR',
     badge: 'Multi-Audio',
     getUrl: (id, isSeries, s, e) =>
       isSeries
         ? `https://pvrplay.online/watch/tv/${id}/${s}/${e}`
         : `https://pvrplay.online/watch/movie/${id}`,
   },
-  {
-    id: 'vidsrc-cc',
-    name: 'Server 2 (Fast)',
-    badge: 'HD Clean',
-    getUrl: (id, isSeries, s, e) =>
-      isSeries
-        ? `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`
-        : `https://vidsrc.cc/v2/embed/movie/${id}`,
-  },
-  {
-    id: 'autoembed',
-    name: 'Server 3 (Auto)',
-    badge: 'Direct',
-    getUrl: (id, isSeries, s, e) =>
-      isSeries
-        ? `https://player.autoembed.cc/embed/tv/${id}/${s}/${e}`
-        : `https://player.autoembed.cc/embed/movie/${id}`,
-  },
-  {
-    id: 'embed2',
-    name: 'Server 4 (Backup)',
-    badge: 'Mirror',
-    getUrl: (id, isSeries, s, e) =>
-      isSeries
-        ? `https://2embed.cc/embedtv/${id}&s=${s}&e=${e}`
-        : `https://2embed.cc/embed/${id}`,
-  },
 ];
 
 const PlayerContent: React.FC = () => {
   const { playingSession, stopPlayback, saveProgress } = useApp();
-  const [selectedServerId, setSelectedServerId] = useState<string>('pvrplay');
+  const [selectedServerId] = useState<string>('pvrplay');
   
   const backBtn = useFocusable({
     id: 'player-back-btn',
@@ -113,41 +86,19 @@ const PlayerContent: React.FC = () => {
           </button>
         </div>
 
-        {/* Right: Server Switcher */}
+        {/* Right: Default Server (PVR) Indicator */}
         <div className="relative pointer-events-auto">
-          <div className="flex items-center gap-1.5 p-1 bg-black/70 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl">
-            <div className="flex items-center gap-1.5 px-2 py-1 text-zinc-400 text-xs font-medium border-r border-white/10 hidden sm:flex">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl">
+            <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-medium">
               <Server className="w-3.5 h-3.5 text-red-500" />
               <span>Server:</span>
             </div>
-            {STREAM_SERVERS.map((server) => {
-              const isSelected = server.id === selectedServerId;
-              return (
-                <button
-                  key={server.id}
-                  onClick={() => setSelectedServerId(server.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(229,9,20,0.6)]'
-                      : 'text-zinc-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  title={`Switch to ${server.name}`}
-                >
-                  <span>{server.name.replace('Server ', 'S')}</span>
-                  {server.badge && (
-                    <span
-                      className={`text-[9px] px-1 py-0.2 rounded font-semibold hidden md:inline ${
-                        isSelected
-                          ? 'bg-black/30 text-white'
-                          : 'bg-zinc-800 text-zinc-400'
-                      }`}
-                    >
-                      {server.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-600 text-white rounded-lg text-xs font-bold shadow-[0_0_15px_rgba(229,9,20,0.6)]">
+              <span>PVR</span>
+              <span className="text-[9px] px-1 py-0.5 bg-black/30 rounded font-semibold text-white/90">
+                Multi-Audio
+              </span>
+            </div>
           </div>
         </div>
       </div>

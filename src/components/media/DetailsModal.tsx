@@ -32,11 +32,13 @@ const RecommendedCard: React.FC<{
   nsfwTolerance: number;
 }> = ({ rec, onClick, nsfwFilter, nsfwTolerance }) => {
   const imageUrl = rec.backdropUrl || rec.posterUrl;
+  const isAdult = !!(rec.isMature || rec.rating === 'A');
   const { isNSFW, userUnblurred, toggleUnblur, ref: nsfwRef } = useNSFWBlur(
     imageUrl,
     nsfwFilter,
     nsfwTolerance,
-    rec.nsfwScore
+    rec.nsfwScore,
+    isAdult
   );
 
   return (
@@ -94,11 +96,13 @@ const EpisodeRowItem: React.FC<{
   nsfwTolerance: number;
 }> = ({ ep, parentMedia, onPlay, nsfwFilter, nsfwTolerance }) => {
   const imageUrl = ep.thumbnailUrl || parentMedia.backdropUrl;
+  const isAdult = !!(parentMedia.isMature || parentMedia.rating === 'A');
   const { isNSFW, userUnblurred, toggleUnblur, ref: nsfwRef } = useNSFWBlur(
     imageUrl,
     nsfwFilter,
     nsfwTolerance,
-    parentMedia.nsfwScore
+    parentMedia.nsfwScore,
+    isAdult
   );
 
   return (
@@ -181,11 +185,13 @@ export const DetailsModal: React.FC = () => {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false);
   const seasonDropdownRef = React.useRef<HTMLDivElement>(null);
 
+  const isAdult = !!(media?.isMature || media?.rating === 'A');
   const { isNSFW, userUnblurred, toggleUnblur } = useNSFWBlur(
     media?.backdropUrl || '',
     userPreferences.nsfwFilter,
     userPreferences.nsfwTolerance ?? 50,
-    media?.nsfwScore
+    media?.nsfwScore,
+    isAdult
   );
 
   useEffect(() => {

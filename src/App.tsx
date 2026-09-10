@@ -1,6 +1,5 @@
 import React from 'react';
 import { SpatialNavigationProvider } from './context/SpatialNavigationContext';
-import { AuthProvider } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/navigation/Navbar';
 import { TVRemoteWidget } from './components/navigation/TVRemoteWidget';
@@ -14,7 +13,6 @@ import { SearchView } from './components/search/SearchView';
 import { DetailsModal } from './components/media/DetailsModal';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { ProfileModal } from './components/profile/ProfileModal';
-import { AuthModal } from './components/profile/AuthModal';
 import { BackToTop } from './components/navigation/BackToTop';
 
 const MainContent: React.FC = () => {
@@ -49,7 +47,6 @@ const MainContent: React.FC = () => {
       <DetailsModal />
       <VideoPlayer />
       <ProfileModal />
-      <AuthModal />
       <TVRemoteWidget />
       <BackToTop focusId="global-main-back-to-top" zoneId="global" threshold={300} />
 
@@ -91,11 +88,9 @@ const MainContent: React.FC = () => {
 export default function App() {
   return (
     <SpatialNavigationProvider>
-      <AuthProvider>
-        <AppProvider>
-          <MainContent />
-        </AppProvider>
-      </AuthProvider>
+      <AppProvider>
+        <MainContent />
+      </AppProvider>
     </SpatialNavigationProvider>
   );
 }

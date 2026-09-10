@@ -82,11 +82,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
   });
 
   if (!activeMedia) return null;
+  const isAdult = !!(activeMedia?.isMature || activeMedia?.rating === 'A');
   const { isNSFW, userUnblurred, toggleUnblur } = useNSFWBlur(
     activeMedia?.backdropUrl || '',
     userPreferences.nsfwFilter,
     userPreferences.nsfwTolerance ?? 50,
-    activeMedia?.nsfwScore
+    activeMedia?.nsfwScore,
+    isAdult
   );
 
 

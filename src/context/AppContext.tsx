@@ -3,6 +3,12 @@ import { ContinueWatchingItem, Episode, MediaItem, Season, UserProfile } from '.
 import { USER_PROFILES } from '../data/mockMedia';
 import { fetchAllMedia, fetchMediaDetails } from '../services/tmdb';
 import {
+  getStoredWatchlist,
+  setStoredWatchlist,
+  getStoredContinueWatching,
+  saveContinueWatchingProgress,
+  removeContinueWatchingItem,
+  clearAllContinueWatching,
   getStoredPreferences,
   saveStoredPreferences,
   UserPreferences,
@@ -10,8 +16,6 @@ import {
   setStoredActiveProfileId,
 } from '../lib/storage';
 import { useSpatialNavigation } from './SpatialNavigationContext';
-import { useAuth } from './AuthContext';
-import { db, doc, collection, setDoc, deleteDoc, onSnapshot, getDocs } from '../lib/firebase';
 
 export type MainViewTab = 'home' | 'shows' | 'movies' | 'categories' | 'my-list' | 'search';
 
@@ -60,8 +64,6 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { setActiveFocusId, setLastMainFocusId, lastMainFocusId, activeFocusId } = useSpatialNavigation();
-  const { user, setIsAuthModalOpen } = useAuth();
-  const activeUid = user?.uid;
 
   const [currentTab, setCurrentTabState] = useState<MainViewTab>('home');
   const [mediaCatalog, setMediaCatalog] = useState<MediaItem[]>([]);
@@ -78,105 +80,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(3);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
 
-  // Initialize storage & Firebase Sync
+  // Initialize storage
   useEffect(() => {
-    // Note: Watchlist and Continue Watching are now only loaded from Firestore
-    // to prevent local storage bloat and ensure consistency.
+    setWatchlistState(getStoredWatchlist());
+    setContinueWatchingList(getStoredContinueWatching());
     const profileId = getStoredActiveProfileId();
     const found = USER_PROFILES.find(p => p.id === profileId);
     if (found) setCurrentProfileState(found);
   }, []);
-
-  // Set defaults when user signs out
-  useEffect(() => {
-    if (!activeUid) {
-      setWatchlistState([]);
-      setContinueWatchingList([]);
-      setWatchlistMediaMap({});
-    }
-  }, [activeUid]);
-
-  // Real-time Firestore Listeners when User is Authenticated (via Google, Email or Passcode Pairing)
-  useEffect(() => {
-    if (!activeUid) return;
-
-    // 1. Listen to /users/{activeUid}/myList
-    const myListRef = collection(db, 'users', activeUid, 'myList');
-    const unsubMyList = onSnapshot(myListRef, (snapshot) => {
-      const items: string[] = [];
-      const mediaMap: Record<string, MediaItem> = {};
-
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const id = docSnap.id;
-        items.push(id);
-
-        mediaMap[id] = {
-          id,
-          title: data.title || id,
-          type: (data.mediaType || data.type || 'movie') as any,
-          description: data.description || 'Saved to My Watchlist',
-          backdropUrl: data.backdropUrl || data.posterPath || data.posterUrl || '',
-          posterUrl: data.posterPath || data.posterUrl || '',
-          rating: data.rating || 'PG-13',
-          releaseYear: data.releaseYear || new Date().getFullYear(),
-          duration: data.duration || (data.mediaType === 'tv' ? 'TV Series' : 'Movie'),
-          genres: data.genres && data.genres.length > 0 ? data.genres : ['Saved'],
-          matchPercentage: 95,
-          cast: data.cast || [],
-          tags: ['Watchlist'],
-          audioTracks: [],
-          subtitleTracks: [],
-          streamVideoUrl: '',
-          trailerVideoUrl: ''
-        };
-      });
-
-      setWatchlistState(items);
-      setWatchlistMediaMap(mediaMap);
-    }, (err) => console.error('Firestore MyList sync error:', err));
-
-    // 2. Listen to /users/{activeUid}/watchHistory
-    const watchHistoryRef = collection(db, 'users', activeUid, 'watchHistory');
-    const unsubHistory = onSnapshot(watchHistoryRef, (snapshot) => {
-      const historyItems: ContinueWatchingItem[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-
-        let lastWatchedAt = Date.now();
-        if (typeof data.lastWatchedAt === 'number') {
-          lastWatchedAt = data.lastWatchedAt;
-        } else if (typeof data.lastWatchedAt === 'string') {
-          const parsed = new Date(data.lastWatchedAt).getTime();
-          if (!isNaN(parsed)) lastWatchedAt = parsed;
-        }
-
-        historyItems.push({
-          mediaId: docSnap.id,
-          progressPercentage: data.progressPercentage || 0,
-          currentTime: data.currentTime || 0,
-          duration: data.duration || 0,
-          lastWatchedAt,
-          seasonNumber: data.seasonNumber || undefined,
-          episodeNumber: data.episodeNumber || undefined,
-          episodeTitle: data.episodeTitle || undefined,
-          title: data.title || '',
-          posterUrl: data.posterPath || data.posterUrl || '',
-          backdropUrl: data.backdropUrl || '',
-          type: data.mediaType || 'movie',
-          rating: data.rating || '16+'
-        });
-      });
-      // Sort by lastWatchedAt desc
-      historyItems.sort((a, b) => b.lastWatchedAt - a.lastWatchedAt);
-      setContinueWatchingList(historyItems);
-    }, (err) => console.error('Firestore WatchHistory sync error:', err));
-
-    return () => {
-      unsubMyList();
-      unsubHistory();
-    };
-  }, [activeUid]);
 
   useEffect(() => {
     fetchAllMedia(userPreferences.includeMature).then(setMediaCatalog).catch(console.error);
@@ -233,46 +144,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [watchlist]);
 
   const toggleWatchlist = useCallback((mediaId: string) => {
-    // If not logged in, we could optionally prompt them to log in, but for now we just
-    // don't allow saving if not logged in to avoid local storage bloat, or we can just
-    // let the local state update but it will wipe on reload.
-    // The user requested: "लॉगिन के बगैर ये कंटिन्यू वाचिंग वगैरह शो नहीं करेगा"
-    if (!activeUid) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-
     setWatchlistState(prev => {
       const exists = prev.includes(mediaId);
       const next = exists ? prev.filter(id => id !== mediaId) : [...prev, mediaId];
-
-      // Firestore sync if user is logged in
-      if (activeUid) {
-        const itemRef = doc(db, 'users', activeUid, 'myList', mediaId);
-        if (exists) {
-          deleteDoc(itemRef).catch(console.error);
-        } else {
-          const media = mediaCatalog.find(m => m.id === mediaId) || watchlistMediaMap[mediaId];
-          setDoc(itemRef, {
-            mediaId,
-            title: media?.title || '',
-            posterPath: media?.posterUrl || '',
-            backdropUrl: media?.backdropUrl || '',
-            mediaType: media?.type || 'movie',
-            description: media?.description || '',
-            rating: media?.rating || 'PG-13',
-            releaseYear: media?.releaseYear || new Date().getFullYear(),
-            genres: media?.genres || [],
-            cast: media?.cast || [],
-            duration: media?.duration || '',
-            addedAt: new Date().toISOString()
-          }, { merge: true }).catch(console.error);
-        }
-      }
-
+      setStoredWatchlist(next);
       return next;
     });
-  }, [activeUid, mediaCatalog, watchlistMediaMap]);
+  }, []);
 
   const saveProgress = useCallback((
     media: MediaItem,
@@ -299,57 +177,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rating: media.rating,
     };
 
-    setContinueWatchingList(prev => {
-      const filtered = prev.filter(c => c.mediaId !== item.mediaId);
-      return [item, ...filtered].slice(0, 20);
-    });
-
-    // Firestore sync if logged in
-    if (activeUid) {
-      const historyRef = doc(db, 'users', activeUid, 'watchHistory', media.id);
-      setDoc(historyRef, {
-        mediaId: media.id,
-        title: media.title,
-        posterPath: media.posterUrl || '',
-        posterUrl: media.posterUrl || '',
-        backdropUrl: media.backdropUrl || '',
-        mediaType: media.type,
-        rating: media.rating || '16+',
-        seasonNumber: isTv ? (episode?.seasonNumber || 1) : null,
-        episodeNumber: isTv ? (episode?.episodeNumber || 1) : null,
-        episodeTitle: isTv ? (episode?.title || null) : null,
-        currentTime: Math.round(currentTime),
-        duration: Math.round(duration),
-        progressPercentage,
-        lastWatchedAt: new Date().toISOString()
-      }, { merge: true }).catch(console.error);
-    }
-  }, [activeUid]);
+    saveContinueWatchingProgress(item);
+    setContinueWatchingList(getStoredContinueWatching());
+  }, []);
 
   const removeProgress = useCallback((mediaId: string) => {
-    setContinueWatchingList(prev => prev.filter(c => c.mediaId !== mediaId));
+    removeContinueWatchingItem(mediaId);
+    setContinueWatchingList(getStoredContinueWatching());
+  }, []);
 
-    if (activeUid) {
-      const historyRef = doc(db, 'users', activeUid, 'watchHistory', mediaId);
-      deleteDoc(historyRef).catch(console.error);
-    }
-  }, [activeUid]);
-
-  const clearContinueWatching = useCallback(async () => {
+  const clearContinueWatching = useCallback(() => {
+    clearAllContinueWatching();
     setContinueWatchingList([]);
-
-    if (activeUid) {
-      try {
-        const historyRef = collection(db, 'users', activeUid, 'watchHistory');
-        const snap = await getDocs(historyRef);
-        for (const docSnap of snap.docs) {
-          await deleteDoc(docSnap.ref);
-        }
-      } catch (err) {
-        console.error('Failed to clear watchHistory from Firestore', err);
-      }
-    }
-  }, [activeUid]);
+  }, []);
 
   const openDetailsModal = useCallback(async (media: MediaItem, fromFocusId?: string) => {
     if (activeFocusId) {
@@ -433,16 +273,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
-    if (!userPreferences.includeMature) {
-      if (playingSession?.media?.isMature) {
-        stopPlayback();
-        setCurrentTab('home');
-      }
-      if (selectedMediaForDetails?.isMature) {
-        closeDetailsModal();
-      }
-    }
-  }, [userPreferences.includeMature, playingSession, selectedMediaForDetails, stopPlayback, closeDetailsModal, setCurrentTab]);
+    // If includeMature is toggled off while watching something mature, you could handle it,
+    // but abruptly closing the modal on fetch is causing a bug where clicking a poster instantly closes it.
+    // We will just let the user view the DetailsModal for now.
+  }, [userPreferences.includeMature]);
 
   // Listen to global back event
   useEffect(() => {

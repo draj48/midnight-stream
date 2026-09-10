@@ -7,20 +7,34 @@ export function useNSFWBlur(
   imageUrl: string,
   enabled: boolean = true,
   tolerance: number = 50,
-  initialScore?: number
+  initialScore?: number,
+  isAdultContent: boolean = false
 ) {
-  // If initialScore is provided (e.g. from media metadata like Ullu/erotic series), seed cache
-  if (initialScore !== undefined && !clientScoreCache.has(imageUrl)) {
-    clientScoreCache.set(imageUrl, initialScore);
+  const effectiveInitial = initialScore !== undefined ? initialScore : (isAdultContent ? 85 : undefined);
+
+  // If effective score is provided (e.g. from media metadata or 18+ rating), seed cache
+  if (effectiveInitial !== undefined && !clientScoreCache.has(imageUrl)) {
+    clientScoreCache.set(imageUrl, effectiveInitial);
   }
 
   const [score, setScore] = useState<number>(() => {
     if (clientScoreCache.has(imageUrl)) return clientScoreCache.get(imageUrl)!;
-    return initialScore ?? 0;
+    return effectiveInitial ?? 0;
   });
   const [isChecking, setIsChecking] = useState(enabled);
   const [userUnblurred, setUserUnblurred] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Keep score synchronized when imageUrl or effectiveInitial changes
+  useEffect(() => {
+    if (clientScoreCache.has(imageUrl)) {
+      setScore(clientScoreCache.get(imageUrl)!);
+    } else if (effectiveInitial !== undefined) {
+      clientScoreCache.set(imageUrl, effectiveInitial);
+      setScore(effectiveInitial);
+    }
+    setUserUnblurred(false);
+  }, [imageUrl, effectiveInitial]);
 
   const toggleUnblur = useCallback((e?: React.MouseEvent) => {
     if (e) {
@@ -58,8 +72,9 @@ export function useNSFWBlur(
               setIsChecking(false);
             })
             .catch(() => {
-              clientScoreCache.set(imageUrl, 0);
-              setScore(0);
+              const fallback = isAdultContent ? 85 : 0;
+              clientScoreCache.set(imageUrl, fallback);
+              setScore(fallback);
               setIsChecking(false);
             });
         }
@@ -72,10 +87,11 @@ export function useNSFWBlur(
     }
 
     return () => observer.disconnect();
-  }, [imageUrl, enabled, tolerance]);
+  }, [imageUrl, enabled, tolerance, isAdultContent]);
 
   // If filter is disabled or tolerance is 100% (allowed all), never blur
-  const isNSFW = enabled && tolerance < 100 && score >= tolerance;
+  // Otherwise blur if score >= tolerance OR if it is adult content and tolerance <= 50
+  const isNSFW = enabled && tolerance < 100 && (score >= tolerance || (isAdultContent && tolerance <= 50));
 
   return {
     isNSFW,

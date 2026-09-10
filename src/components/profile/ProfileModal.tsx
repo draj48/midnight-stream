@@ -1,7 +1,6 @@
 import React from 'react';
-import { X, Check, Tv, Sliders, Volume2, Shield, Trash2, UserPlus, Sparkles, EyeOff, LogIn, ExternalLink, LogOut, CheckCircle2, KeyRound, User as UserIcon } from 'lucide-react';
+import { X, Tv, Shield, Trash2, EyeOff } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { useAuth } from '../../context/AuthContext';
 import { USER_PROFILES } from '../../data/mockMedia';
 import { useFocusable } from '../../context/SpatialNavigationContext';
 
@@ -9,23 +8,16 @@ export const ProfileModal: React.FC = () => {
   const {
     isProfileModalOpen,
     setIsProfileModalOpen,
-    currentProfile,
-    setCurrentProfile,
     userPreferences,
     updateUserPreferences,
   } = useApp();
 
-  const { user, setIsAuthModalOpen } = useAuth();
-
-  
-  
   const autoPlayToggleBtn = useFocusable({
     id: 'profile-autoplay-toggle',
     zoneId: 'modal-profile',
     onSelect: () => updateUserPreferences({ autoPlayNextEpisode: !userPreferences.autoPlayNextEpisode }),
   });
 
-  
   const clearProgressBtn = useFocusable({
     id: 'profile-clear-progress',
     zoneId: 'modal-profile',
@@ -77,15 +69,6 @@ export const ProfileModal: React.FC = () => {
     onSelect: () => setIsProfileModalOpen(false),
   });
 
-  const authModalBtn = useFocusable({
-    id: 'profile-auth-modal-btn',
-    zoneId: 'modal-profile',
-    onSelect: () => {
-      setIsProfileModalOpen(false);
-      setIsAuthModalOpen(true);
-    },
-  });
-
   if (!isProfileModalOpen) return null;
 
   return (
@@ -114,44 +97,6 @@ export const ProfileModal: React.FC = () => {
             aria-label="Close Profile Settings"
           >
             <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Account & TV Passcode Pairing Banner */}
-        <div className="mt-4 p-4.5 rounded-2xl bg-gradient-to-r from-zinc-900 to-zinc-900/90 border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-red-600/20 border border-red-600/40 flex items-center justify-center text-red-500 font-bold shrink-0 shadow-inner">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <span>{user ? `Account: ${user.displayName || user.email}` : 'Sign In / Passcode Login'}</span>
-                {user && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
-                    Active
-                  </span>
-                )}
-              </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {user ? 'Generate 4-digit TV login passcode or manage your account' : 'Log in with Google/Email or enter 4-digit Passcode to sync Watchlist'}
-              </p>
-            </div>
-          </div>
-          <button
-            ref={authModalBtn.ref}
-            onClick={() => {
-              setIsProfileModalOpen(false);
-              setIsAuthModalOpen(true);
-            }}
-            data-focused={authModalBtn.isFocused}
-            className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-lg ${
-              authModalBtn.isFocused
-                ? 'bg-white text-zinc-950 scale-105 ring-2 ring-white shadow-white/20'
-                : 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/20'
-            }`}
-          >
-            <UserIcon className="w-3.5 h-3.5" />
-            <span>{user ? 'TV Passcode / Account' : 'Sign In / Use Passcode'}</span>
           </button>
         </div>
 
@@ -276,14 +221,14 @@ export const ProfileModal: React.FC = () => {
                   ref={nsfwToggleBtn.ref}
                   data-focused={nsfwToggleBtn.isFocused}
                   onClick={() => updateUserPreferences({ nsfwFilter: !userPreferences.nsfwFilter })}
-                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                    userPreferences.nsfwFilter ? 'bg-red-600' : 'bg-zinc-700'
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer flex items-center px-1 ${
+                    userPreferences.nsfwFilter ? 'bg-emerald-500' : 'bg-zinc-700'
                   } ${nsfwToggleBtn.isFocused ? 'ring-4 ring-white ring-offset-2 ring-offset-zinc-950 scale-110' : ''}`}
                   aria-label="Toggle NSFW Filter"
                 >
                   <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
-                      userPreferences.nsfwFilter ? 'right-1' : 'left-1'
+                    className={`w-4 h-4 rounded-full bg-white transition-transform duration-300 transform ${
+                      userPreferences.nsfwFilter ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
