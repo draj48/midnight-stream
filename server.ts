@@ -98,40 +98,6 @@ async function startServer() {
 
   const imaggaQueue = new RequestQueue();
   
-  // Image proxy to bypass ISP blocks on TMDB images (e.g. Jio)
-  app.get('/api/image-proxy', async (req, res) => {
-    const tmdbPath = req.query.path as string;
-    if (!tmdbPath) {
-      return res.status(400).send('Missing path');
-    }
-
-    try {
-      const tmdbUrl = `https://image.tmdb.org/t/p${tmdbPath.startsWith('/') ? '' : '/'}${tmdbPath}`;
-      const response = await fetch(tmdbUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8'
-        }
-      });
-      
-      if (!response.ok) {
-        return res.status(response.status).send('Error fetching image');
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (contentType) res.set('Content-Type', contentType);
-      const cacheControl = response.headers.get('cache-control');
-      if (cacheControl) res.set('Cache-Control', cacheControl);
-      else res.set('Cache-Control', 'public, max-age=31536000');
-      
-      const buffer = await response.arrayBuffer();
-      res.send(Buffer.from(buffer));
-    } catch (err) {
-      console.error('Image proxy error:', err);
-      res.status(500).send('Internal Server Error');
-    }
-  });
-
   app.get('/api/nsfw', async (req, res) => {
     const imageUrl = req.query.url as string;
     const threshold = parseInt(req.query.threshold as string, 10) || 50;

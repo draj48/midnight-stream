@@ -2,7 +2,7 @@ import { MediaItem, Season, Episode, AudioTrack, SubtitleTrack } from '../types/
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '11f61dee51697542aa76601ef53aa2aa';
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = '/api/image-proxy?path=';
+const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 // Standard dummy audio/subtitles for playback compatibility
 const DUMMY_AUDIO: AudioTrack[] = [
@@ -373,8 +373,8 @@ export const fetchMediaDetails = async (mediaId: string, type: 'movie' | 'tv'): 
                     title: ep.name || `Episode ${ep.episode_number}`,
                     description: ep.overview || 'No episode description available.',
                     thumbnailUrl: ep.still_path
-                      ? `${IMAGE_BASE_URL}/w500${ep.still_path}`
-                      : (details.backdrop_path ? `${IMAGE_BASE_URL}/w500${details.backdrop_path}` : ''),
+                      ? `https://image.tmdb.org/t/p/w500${ep.still_path}`
+                      : (details.backdrop_path ? `https://image.tmdb.org/t/p/w500${details.backdrop_path}` : ''),
                     duration: `${ep.runtime || 24}m`,
                     streamVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                   }))
@@ -392,7 +392,7 @@ export const fetchMediaDetails = async (mediaId: string, type: 'movie' | 'tv'): 
                 episodeNumber: i + 1,
                 title: `Episode ${i + 1}`,
                 description: `Episode ${i + 1} of ${s.name || `Season ${s.season_number}`}.`,
-                thumbnailUrl: details.backdrop_path ? `${IMAGE_BASE_URL}/w500${details.backdrop_path}` : '',
+                thumbnailUrl: details.backdrop_path ? `https://image.tmdb.org/t/p/w500${details.backdrop_path}` : '',
                 duration: '24m',
                 streamVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
               }))
@@ -436,7 +436,7 @@ export const fetchSeasonEpisodes = async (
         title: ep.name || `Episode ${ep.episode_number}`,
         description: ep.overview || 'No episode description available.',
         thumbnailUrl: ep.still_path
-          ? `${IMAGE_BASE_URL}/w500${ep.still_path}`
+          ? `https://image.tmdb.org/t/p/w500${ep.still_path}`
           : (fallbackBackdrop || ''),
         duration: `${ep.runtime || 24}m`,
         streamVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
