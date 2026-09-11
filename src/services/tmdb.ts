@@ -156,11 +156,51 @@ const fetchFromTMDB = async (endpoint: string, params: Record<string, string> = 
 };
 
 export const fetchAllMedia = async (includeMature: boolean = false): Promise<MediaItem[]> => {
-  const [trendingMovies, trendingShows, popularMovies, popularShows, action, scifi, anime, docs] = await Promise.all([
+  // TMDB Network IDs for premium OTT platforms (Netflix, Amazon, Hotstar, SonyLIV, ZEE5, JioCinema, MX Player, Aha, Apple TV, Hulu, HBO)
+  const PREMIUM_OTT_NETWORKS = '213|1024|3919|2303|11802|3186|2865|3154|2552|453|318';
+
+  const [
+    trendingMoviesHindi,
+    trendingShowsHindi,
+    trendingMoviesTamil,
+    trendingShowsTamil,
+    trendingMoviesGlobal,
+    trendingShowsGlobal,
+    popularMovies,
+    popularShows,
+    action,
+    scifi,
+    anime,
+    docs
+  ] = await Promise.all([
     fetchFromTMDB('/discover/movie', { with_original_language: 'hi', sort_by: 'popularity.desc', region: 'IN' }),
-    fetchFromTMDB('/discover/tv', { with_original_language: 'hi', sort_by: 'popularity.desc', with_origin_country: 'IN' }),
+    fetchFromTMDB('/discover/tv', { 
+      with_original_language: 'hi', 
+      sort_by: 'popularity.desc', 
+      with_origin_country: 'IN',
+      with_networks: PREMIUM_OTT_NETWORKS, // Force premium OTT only
+      without_genres: '10766,10767,10764' // Double protection against soaps
+    }),
+    fetchFromTMDB('/discover/movie', { with_original_language: 'ta', sort_by: 'popularity.desc', region: 'IN' }),
+    fetchFromTMDB('/discover/tv', { 
+      with_original_language: 'ta', 
+      sort_by: 'popularity.desc', 
+      with_origin_country: 'IN',
+      with_networks: PREMIUM_OTT_NETWORKS, // Force premium OTT only
+      without_genres: '10766,10767,10764'
+    }),
+    fetchFromTMDB('/trending/movie/day'),
+    fetchFromTMDB('/discover/tv', { 
+      sort_by: 'popularity.desc', 
+      with_networks: PREMIUM_OTT_NETWORKS,
+      without_genres: '10766,10767,10764' 
+    }),
     fetchFromTMDB('/movie/popular'),
-    fetchFromTMDB('/tv/popular'),
+    fetchFromTMDB('/discover/tv', { 
+      sort_by: 'vote_count.desc', 
+      with_networks: PREMIUM_OTT_NETWORKS,
+      without_genres: '10766,10767,10764' 
+    }), // Premium popular TV
     fetchFromTMDB('/discover/movie', { with_genres: '28' }),
     fetchFromTMDB('/discover/movie', { with_genres: '878' }),
     fetchFromTMDB('/discover/tv', { with_genres: '16' }),
@@ -168,11 +208,49 @@ export const fetchAllMedia = async (includeMature: boolean = false): Promise<Med
   ]);
   
   const trending = { results: [] };
+
+  // Combine Hindi and Tamil into one Indian list
+  const mixIndian = (hindiList: any[] = [], tamilList: any[] = []) => {
+    const mixed = [];
+    const maxLen = Math.max(hindiList.length, tamilList.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (hindiList[i]) mixed.push(hindiList[i]);
+      if (tamilList[i]) mixed.push(tamilList[i]); // 1:1 mix of Hindi and Tamil
+    }
+    return mixed;
+  };
+
+  const indianMovies = mixIndian(trendingMoviesHindi.results, trendingMoviesTamil.results);
+  const indianShows = mixIndian(trendingShowsHindi.results, trendingShowsTamil.results);
+
+  // Helper to mix 80% indian, 20% global
+  const mixContent = (indianList: any[] = [], globalList: any[] = []) => {
+    const mixed = [];
+    const maxLen = Math.max(indianList.length, globalList.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (indianList[i]) mixed.push(indianList[i]);
+      if (indianList[i+1]) mixed.push(indianList[i+1]);
+      if (indianList[i+2]) mixed.push(indianList[i+2]);
+      if (indianList[i+3]) mixed.push(indianList[i+3]);
+      if (globalList[i]) mixed.push(globalList[i]);
+    }
+    // Filter out duplicates that might occur if globalList includes Indian content
+    const seen = new Set();
+    return mixed.filter(item => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  };
+
+  const mixedMovies = mixContent(indianMovies, trendingMoviesGlobal.results);
+  const mixedShows = mixContent(indianShows, trendingShowsGlobal.results);
+
   // Interleave movies and shows for top 10
-  const maxLen = Math.max(trendingMovies.results?.length || 0, trendingShows.results?.length || 0);
+  const maxLen = Math.max(mixedMovies.length, mixedShows.length);
   for (let i = 0; i < maxLen; i++) {
-    if (trendingMovies.results?.[i]) trending.results.push(trendingMovies.results[i]);
-    if (trendingShows.results?.[i]) trending.results.push(trendingShows.results[i]);
+    if (mixedMovies[i]) trending.results.push(mixedMovies[i]);
+    if (mixedShows[i]) trending.results.push(mixedShows[i]);
   }
 
   const rawItems = [
