@@ -77,7 +77,7 @@ const RecommendedCard: React.FC<{
           <span className="text-emerald-400 font-bold">{rec.matchPercentage}% Match</span>
           <div className="flex items-center gap-1.5">
             {rec.releaseYear && <span className="text-zinc-500 text-[10px]">{rec.releaseYear}</span>}
-            <span className="border border-zinc-700 px-1 py-0.2 rounded text-zinc-400 text-[10px]">{rec.rating}</span>
+            {rec.rating && <span className="border border-zinc-700 px-1 py-0.2 rounded text-zinc-400 text-[10px]">{rec.rating}</span>}
           </div>
         </div>
         <h4 className="text-xs sm:text-sm font-bold text-white truncate">{rec.title}</h4>
@@ -414,9 +414,11 @@ export const DetailsModal: React.FC = () => {
               )}
               <span className="text-emerald-400 font-bold">{media.matchPercentage}% Match</span>
               <span className="text-zinc-300">{media.releaseYear}</span>
-              <span className="border border-zinc-700 bg-zinc-900/80 text-zinc-300 px-1.5 py-0.2 rounded text-[11px]">
-                {media.rating}
-              </span>
+              {media.rating && (
+                <span className="border border-zinc-700 bg-zinc-900/80 text-zinc-300 px-1.5 py-0.2 rounded text-[11px]">
+                  {media.rating}
+                </span>
+              )}
               <span className="text-zinc-300">{media.duration}</span>
             </div>
 

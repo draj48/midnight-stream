@@ -51,6 +51,8 @@ const KNOWN_INDIAN_CERTIFICATIONS: Record<string, string> = {
   'gandhari': 'U/A 16+',
   'alpha': 'U/A 16+',
   'dhamaal 4': 'U/A 13+',
+  'dc': 'A',
+  'call my agent! the movie': 'U/A 16+',
   '3 idiots': 'U/A 13+',
   'dilwale dulhania le jayenge': 'U',
   'sholay': 'U/A 13+',
@@ -108,18 +110,19 @@ export const normalizeRating = (
     if (['U/A 16+', '16+', 'TV-14', 'PG-13'].includes(c)) return 'U/A 16+';
     if (['U/A', 'U/A 13+', '13+', '12+'].includes(c)) return 'U/A 13+';
     if (['U', 'U/A 7+', '7+', 'PG', 'TV-PG', 'TV-G', 'G', 'TV-Y', 'TV-Y7'].includes(c)) return 'U';
+    return c; // Return the actual raw cert if we don't recognize it, better than guessing
   }
   
   if (isMature) {
     return 'A';
   }
   
-  // Animation, family, kids
+  // Kids/Family animation can safely be 'U'
   if (genres.includes(10751) || genres.includes(16) || genres.includes(10762)) {
     return 'U';
   }
 
-  // Television shows on Indian television are broadcast-friendly (CID, etc.)
+  // Television shows on Indian television are broadcast-friendly
   if (mediaType === 'tv') {
     if (genres.includes(27)) return 'U/A 16+'; // Horror TV
     return 'U/A 13+'; // Standard TV serial
@@ -158,6 +161,9 @@ const fetchFromTMDB = async (endpoint: string, params: Record<string, string> = 
 export const fetchAllMedia = async (includeMature: boolean = false): Promise<MediaItem[]> => {
   // TMDB Network IDs for premium OTT platforms (Netflix, Amazon, Hotstar, SonyLIV, ZEE5, JioCinema, MX Player, Aha, Apple TV, Hulu, HBO)
   const PREMIUM_OTT_NETWORKS = '213|1024|3919|2303|11802|3186|2865|3154|2552|453|318';
+  
+  // Get today's date in YYYY-MM-DD format to prevent fetching unreleased future content
+  const today = new Date().toISOString().split('T')[0];
 
   const [
     trendingMoviesHindi,
@@ -173,38 +179,52 @@ export const fetchAllMedia = async (includeMature: boolean = false): Promise<Med
     anime,
     docs
   ] = await Promise.all([
-    fetchFromTMDB('/discover/movie', { with_original_language: 'hi', sort_by: 'popularity.desc', region: 'IN' }),
+    fetchFromTMDB('/discover/movie', { 
+      with_original_language: 'hi', 
+      sort_by: 'popularity.desc', 
+      region: 'IN',
+      'primary_release_date.lte': today
+    }),
     fetchFromTMDB('/discover/tv', { 
       with_original_language: 'hi', 
       sort_by: 'popularity.desc', 
       with_origin_country: 'IN',
-      with_networks: PREMIUM_OTT_NETWORKS, // Force premium OTT only
-      without_genres: '10766,10767,10764' // Double protection against soaps
+      with_networks: PREMIUM_OTT_NETWORKS,
+      without_genres: '10766,10767,10764',
+      'first_air_date.lte': today
     }),
-    fetchFromTMDB('/discover/movie', { with_original_language: 'ta', sort_by: 'popularity.desc', region: 'IN' }),
+    fetchFromTMDB('/discover/movie', { 
+      with_original_language: 'ta', 
+      sort_by: 'popularity.desc', 
+      region: 'IN',
+      'primary_release_date.lte': today
+    }),
     fetchFromTMDB('/discover/tv', { 
       with_original_language: 'ta', 
       sort_by: 'popularity.desc', 
       with_origin_country: 'IN',
-      with_networks: PREMIUM_OTT_NETWORKS, // Force premium OTT only
-      without_genres: '10766,10767,10764'
+      with_networks: PREMIUM_OTT_NETWORKS,
+      without_genres: '10766,10767,10764',
+      'first_air_date.lte': today
     }),
     fetchFromTMDB('/trending/movie/day'),
     fetchFromTMDB('/discover/tv', { 
       sort_by: 'popularity.desc', 
       with_networks: PREMIUM_OTT_NETWORKS,
-      without_genres: '10766,10767,10764' 
+      without_genres: '10766,10767,10764',
+      'first_air_date.lte': today 
     }),
     fetchFromTMDB('/movie/popular'),
     fetchFromTMDB('/discover/tv', { 
       sort_by: 'vote_count.desc', 
       with_networks: PREMIUM_OTT_NETWORKS,
-      without_genres: '10766,10767,10764' 
-    }), // Premium popular TV
-    fetchFromTMDB('/discover/movie', { with_genres: '28' }),
-    fetchFromTMDB('/discover/movie', { with_genres: '878' }),
-    fetchFromTMDB('/discover/tv', { with_genres: '16' }),
-    fetchFromTMDB('/discover/movie', { with_genres: '99' })
+      without_genres: '10766,10767,10764',
+      'first_air_date.lte': today 
+    }), 
+    fetchFromTMDB('/discover/movie', { with_genres: '28', 'primary_release_date.lte': today }),
+    fetchFromTMDB('/discover/movie', { with_genres: '878', 'primary_release_date.lte': today }),
+    fetchFromTMDB('/discover/tv', { with_genres: '16', 'first_air_date.lte': today }),
+    fetchFromTMDB('/discover/movie', { with_genres: '99', 'primary_release_date.lte': today })
   ]);
   
   const trending = { results: [] };
@@ -367,17 +387,25 @@ export const fetchMediaDetails = async (mediaId: string, type: 'movie' | 'tv'): 
     let isRealMature = details.adult;
     
     if (type === 'movie' && details.release_dates?.results) {
-      const us = details.release_dates.results.find((r) => r.iso_3166_1 === 'US');
-      const ind = details.release_dates.results.find((r) => r.iso_3166_1 === 'IN');
-      const cert = ind?.release_dates?.[0]?.certification || us?.release_dates?.[0]?.certification;
+      const getCert = (countryRelease: any) => countryRelease?.release_dates?.find((rd: any) => rd.certification && rd.certification.trim() !== '')?.certification;
+      
+      const us = details.release_dates.results.find((r: any) => r.iso_3166_1 === 'US');
+      const ind = details.release_dates.results.find((r: any) => r.iso_3166_1 === 'IN');
+      const anyOther = details.release_dates.results.find((r: any) => getCert(r));
+
+      const cert = getCert(ind) || getCert(us) || getCert(anyOther);
       if (cert) {
         realRating = cert;
         if (cert === 'A' || cert === 'R' || cert === 'NC-17') isRealMature = true;
       }
     } else if (type === 'tv' && details.content_ratings?.results) {
-      const us = details.content_ratings.results.find((r) => r.iso_3166_1 === 'US');
-      const ind = details.content_ratings.results.find((r) => r.iso_3166_1 === 'IN');
-      const cert = ind?.rating || us?.rating;
+      const getCert = (countryRating: any) => countryRating?.rating && countryRating.rating.trim() !== '' ? countryRating.rating : undefined;
+      
+      const us = details.content_ratings.results.find((r: any) => r.iso_3166_1 === 'US');
+      const ind = details.content_ratings.results.find((r: any) => r.iso_3166_1 === 'IN');
+      const anyOther = details.content_ratings.results.find((r: any) => getCert(r));
+
+      const cert = getCert(ind) || getCert(us) || getCert(anyOther);
       if (cert) {
         realRating = cert;
         if (cert === 'A' || cert === 'TV-MA') isRealMature = true;

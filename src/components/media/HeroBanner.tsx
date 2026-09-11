@@ -181,9 +181,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
 
               <span className="text-emerald-400 font-bold">{activeMedia?.matchPercentage}% Match</span>
               <span className="text-zinc-300 font-medium">{activeMedia?.releaseYear}</span>
-              <span className="border border-zinc-700 bg-zinc-900/80 text-zinc-300 px-1.5 py-0.2 rounded text-[11px]">
-                {activeMedia?.rating}
-              </span>
+              {activeMedia?.rating && (
+                <span className="border border-zinc-700 bg-zinc-900/80 text-zinc-300 px-1.5 py-0.2 rounded text-[11px]">
+                  {activeMedia?.rating}
+                </span>
+              )}
               <span className="text-zinc-300">{activeMedia?.duration}</span>
             </div>
 
