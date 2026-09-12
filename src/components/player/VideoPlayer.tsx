@@ -29,15 +29,6 @@ const STREAM_SERVERS: StreamServer[] = [
         ? `https://nxsha.space/embed/tv/${id}/${s}/${e}?color=netflix&disable_app_ad=true`
         : `https://nxsha.space/embed/movie/${id}?color=netflix&disable_app_ad=true`,
   },
-  {
-    id: '2embed',
-    name: '2Embed',
-    badge: 'Fast',
-    getUrl: (id, isSeries, s, e) =>
-      isSeries
-        ? `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
-        : `https://www.2embed.cc/embed/${id}`,
-  },
 ];
 
 const PlayerContent: React.FC = () => {
