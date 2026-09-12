@@ -12,6 +12,15 @@
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
   }
+
+  /* Globally Hide Scrollbar */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  html, body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Linux Smart TV Hardware-Acceleration & Memory Optimization */
