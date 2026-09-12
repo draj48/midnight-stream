@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Settings, Crown } from 'lucide-react';
+import { Search, Settings, Crown, Maximize, Minimize } from 'lucide-react';
 import { useApp, MainViewTab } from '../../context/AppContext';
 import { useFocusable, useSpatialNavigation } from '../../context/SpatialNavigationContext';
 
@@ -12,6 +12,7 @@ export const Navbar: React.FC = () => {
 
   const { isRemoteOverlayVisible, setIsRemoteOverlayVisible, isTVMode } = useSpatialNavigation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +21,26 @@ export const Navbar: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.warn('Fullscreen failed:', err);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   // Nav Items focusables
   const homeBtn = useFocusable({
@@ -56,6 +77,12 @@ export const Navbar: React.FC = () => {
     id: 'nav-search',
     zoneId: 'nav',
     onSelect: () => setCurrentTab('search'),
+  });
+
+  const fullscreenBtn = useFocusable({
+    id: 'nav-fullscreen',
+    zoneId: 'nav',
+    onSelect: toggleFullscreen,
   });
 
   const settingsBtn = useFocusable({
@@ -162,6 +189,21 @@ export const Navbar: React.FC = () => {
           >
             <Search className="w-4 h-4" />
             <span className="hidden xl:inline text-xs font-medium">Search</span>
+          </button>
+
+          {/* Fullscreen Button */}
+          <button
+            ref={fullscreenBtn.ref}
+            onClick={toggleFullscreen}
+            className={`p-2 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-2 text-sm transition-all cursor-pointer ${
+              fullscreenBtn.isFocused
+                ? 'bg-white text-zinc-950 scale-105 ring-2 ring-white'
+                : 'hover:text-white text-zinc-300'
+            }`}
+            aria-label="Toggle Fullscreen"
+            data-focused={fullscreenBtn.isFocused}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
 
           {/* Settings Button */}

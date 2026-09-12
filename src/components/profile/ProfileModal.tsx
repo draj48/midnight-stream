@@ -18,6 +18,12 @@ export const ProfileModal: React.FC = () => {
     onSelect: () => updateUserPreferences({ autoPlayNextEpisode: !userPreferences.autoPlayNextEpisode }),
   });
 
+  const autoFullscreenToggleBtn = useFocusable({
+    id: 'profile-autofullscreen-toggle',
+    zoneId: 'modal-profile',
+    onSelect: () => updateUserPreferences({ autoFullscreen: !userPreferences.autoFullscreen }),
+  });
+
   const clearProgressBtn = useFocusable({
     id: 'profile-clear-progress',
     zoneId: 'modal-profile',
@@ -177,6 +183,28 @@ export const ProfileModal: React.FC = () => {
                 />
               </button>
             </div>
+            {/* Auto Fullscreen on load toggle */}
+            <div className="flex items-center justify-between bg-zinc-900/80 p-4 rounded-2xl border border-zinc-800">
+              <div>
+                <h4 className="font-semibold text-zinc-200">Auto Fullscreen</h4>
+                <p className="text-zinc-400 text-[11px]">Automatically enter fullscreen mode on first interaction.</p>
+              </div>
+              <button
+                ref={autoFullscreenToggleBtn.ref}
+                data-focused={autoFullscreenToggleBtn.isFocused}
+                onClick={() => updateUserPreferences({ autoFullscreen: !userPreferences.autoFullscreen })}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  userPreferences.autoFullscreen ? 'bg-red-600' : 'bg-zinc-700'
+                } ${autoFullscreenToggleBtn.isFocused ? 'ring-4 ring-white ring-offset-2 ring-offset-zinc-950 scale-110' : ''}`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 ${
+                    userPreferences.autoFullscreen ? 'right-1' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Mature Content (18+) toggle */}
             <div className="flex items-center justify-between bg-zinc-900/80 p-4 rounded-2xl border border-red-900/30">
               <div>

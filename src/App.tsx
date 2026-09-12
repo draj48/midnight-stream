@@ -22,6 +22,43 @@ const MainContent: React.FC = () => {
     applyTVOptimizations(userPreferences.lowPowerTVMode);
   }, [userPreferences.lowPowerTVMode]);
 
+  // Handle Auto Fullscreen
+  React.useEffect(() => {
+    if (!userPreferences.autoFullscreen) return;
+    const enterFullscreen = (e: MouseEvent | KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        // Do not auto-fullscreen ONLY if clicking the Settings button, Fullscreen button, or inside a modal
+        if (
+          target.closest('[aria-label="App Settings and User Profile"]') ||
+          target.closest('[aria-label="Toggle Fullscreen"]') ||
+          target.closest('[role="dialog"]')
+        ) {
+          return;
+        }
+      }
+
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.warn('Auto fullscreen failed:', err);
+          });
+        }
+      } catch (e) {}
+      // Remove listeners after first interaction
+      window.removeEventListener('click', enterFullscreen);
+      window.removeEventListener('keydown', enterFullscreen);
+    };
+
+    window.addEventListener('click', enterFullscreen);
+    window.addEventListener('keydown', enterFullscreen);
+
+    return () => {
+      window.removeEventListener('click', enterFullscreen);
+      window.removeEventListener('keydown', enterFullscreen);
+    };
+  }, [userPreferences.autoFullscreen]);
+
   return (
     <div
       className="min-h-screen bg-[#08080a] text-zinc-100 flex flex-col selection:bg-red-600 selection:text-white"
