@@ -89,6 +89,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           alt={media.title}
           loading="lazy"
           decoding="async"
+          fetchPriority="low"
           className={`w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-105 ${isNSFW && !userUnblurred ? 'blur-2xl scale-125 saturate-50' : ''}`}
         />
         {isNSFW && !userUnblurred && (

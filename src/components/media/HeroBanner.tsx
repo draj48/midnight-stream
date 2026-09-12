@@ -70,17 +70,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
     onSelect: () => toggleWatchlist(activeMedia?.id || ""),
   });
 
-  const muteBtn = useFocusable({
-    id: 'hero-mute-btn',
-    zoneId: 'hero',
-    onSelect: () => {
-      if (videoRef.current) {
-        videoRef.current.muted = !isMuted;
-        setIsMuted(!isMuted);
-      }
-    },
-  });
-
   if (!activeMedia) return null;
   const isAdult = !!(activeMedia?.isMature || activeMedia?.rating === 'A');
   const { isNSFW, userUnblurred, toggleUnblur } = useNSFWBlur(
@@ -98,12 +87,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
         {/* Background Image / Video Player */}
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <img
-            src={activeMedia?.backdropUrl}
+            src={activeMedia?.backdropUrl?.replace('/w780/', '/original/')}
             alt={activeMedia?.title}
             className={`w-full h-full object-cover object-center scale-102 transition-opacity duration-1000 ${
               isVideoLoaded ? 'opacity-0' : 'opacity-100'
             } ${isNSFW && !userUnblurred ? 'blur-2xl scale-110 saturate-50' : ''}`}
             loading="eager"
+            fetchPriority="high"
           />
 
           {showVideo && (
@@ -283,27 +273,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ media, items = [] }) => 
                 <span className="text-[11px] text-zinc-300 underline underline-offset-2">Uncover</span>
               </button>
             )}
-
-            <button
-              id="hero-mute-btn"
-              ref={muteBtn.ref}
-              onClick={() => {
-                if (videoRef.current) {
-                  videoRef.current.muted = !isMuted;
-                  setIsMuted(!isMuted);
-                }
-              }}
-              className={`p-2.5 rounded-full border transition-all cursor-pointer ${
-                muteBtn.isFocused
-                  ? 'bg-white text-zinc-950 scale-110 ring-2 ring-white shadow-lg'
-                  : 'bg-black/60 border-zinc-600/60 text-zinc-300 hover:text-white hover:bg-black/80'
-              }`}
-              data-focused={muteBtn.isFocused}
-              title={isMuted ? 'Unmute Trailer Preview' : 'Mute Trailer Preview'}
-              aria-label={isMuted ? 'Unmute Trailer Preview' : 'Mute Trailer Preview'}
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
           </div>
         </div>
       </section>

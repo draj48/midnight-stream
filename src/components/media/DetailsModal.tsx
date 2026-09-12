@@ -365,7 +365,7 @@ export const DetailsModal: React.FC = () => {
         {/* Backdrop Banner Header */}
         <div className="relative h-[380px] sm:h-[440px] w-full overflow-hidden bg-black">
           <img
-            src={media.backdropUrl}
+            src={media.backdropUrl?.replace('/w780/', '/original/')}
             alt={media.title}
             className={`w-full h-full object-cover object-center transition-all duration-500 ${
               isNSFW && !userUnblurred ? 'blur-2xl scale-110 saturate-50' : ''
