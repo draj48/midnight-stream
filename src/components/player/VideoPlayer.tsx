@@ -77,27 +77,27 @@ const PlayerContent: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
       {/* Top Controls Bar */}
-      <div className="absolute top-5 left-6 right-6 z-[110] flex items-start justify-between pointer-events-none">
-        {/* Left: Back button & Server Indicator */}
-        <div className="flex flex-col items-start gap-3 pointer-events-auto">
+      <div className="absolute top-2 left-2 right-6 z-[110] flex items-start justify-between pointer-events-none">
+        {/* Left: Back button & Server Indicator (Wrapped in a solid container to block iframe UI) */}
+        <div className="flex flex-col items-start gap-3 pointer-events-auto bg-[#08080a] p-3 rounded-2xl border border-zinc-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.9)]">
           <button
             ref={backBtn.ref}
             onClick={stopPlayback}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all cursor-pointer ${
               backBtn.isFocused
-                ? 'bg-white text-black scale-110 ring-4 ring-white shadow-xl'
-                : 'bg-black/60 text-white hover:bg-black/80 border border-white/10'
+                ? 'bg-white text-black scale-105 ring-4 ring-white shadow-xl'
+                : 'bg-zinc-900 text-white hover:bg-zinc-800 hover:text-white border border-zinc-700/80'
             }`}
             data-focused={backBtn.isFocused}
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="font-bold text-sm">Back</span>
+            <span className="font-bold text-base">Back</span>
           </button>
 
           {/* Server Switcher (Vertical List) */}
-          <div className="flex flex-col bg-black/70 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl p-1.5 min-w-[160px] gap-1">
-            <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-medium px-2 py-1 mb-1 border-b border-white/10 pb-2">
-              <Server className="w-3.5 h-3.5 text-red-500" />
+          <div className="flex flex-col bg-zinc-950 border border-zinc-800/80 rounded-xl p-1.5 min-w-[180px] gap-1">
+            <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-medium px-2 py-1 mb-1 border-b border-zinc-800 pb-2">
+              <Server className="w-4 h-4 text-red-500" />
               <span>Select Server</span>
             </div>
             {STREAM_SERVERS.map((server, index) => {
