@@ -135,9 +135,10 @@ const PlayerContent: React.FC = () => {
       <iframe
         key={iframeSrc}
         src={iframeSrc}
-        className="w-full h-full border-none"
+        className="w-full h-full border-none overflow-hidden"
         allowFullScreen
         allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        scrolling="no"
       ></iframe>
     </div>
   );
