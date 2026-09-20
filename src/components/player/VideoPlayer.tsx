@@ -21,6 +21,15 @@ const STREAM_SERVERS: StreamServer[] = [
         : `https://pvrplay.online/watch/movie/${id}`,
   },
   {
+    id: 'bingr',
+    name: 'Bingr',
+    badge: 'Auto-Switching',
+    getUrl: (id, isSeries, s, e) =>
+      isSeries
+        ? `https://bingr.one/watch/tv/${id}/${s}/${e}`
+        : `https://bingr.one/watch/movie/${id}`,
+  },
+  {
     id: 'nxsha',
     name: 'NXSHA',
     badge: 'Netflix',
