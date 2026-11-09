@@ -17,8 +17,8 @@ const STREAM_SERVERS: StreamServer[] = [
     badge: 'Multi-Audio',
     getUrl: (id, isSeries, s, e) =>
       isSeries
-        ? `https://pvrplay.online/watch/tv/${id}/${s}/${e}`
-        : `https://pvrplay.online/watch/movie/${id}`,
+        ? `https://ghar-baithe-free-movies-dekho-bina-rukawat-pvrplay-hd.pvrplay.fun/watch/tv/${id}/${s}/${e}`
+        : `https://ghar-baithe-free-movies-dekho-bina-rukawat-pvrplay-hd.pvrplay.fun/watch/movie/${id}`,
   },
   {
     id: 'bingr',
